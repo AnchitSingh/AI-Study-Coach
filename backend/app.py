@@ -243,11 +243,11 @@ def health_check():
 @app.route('/api/generate-quiz', methods=['POST'])
 def generate_quiz():
     if not model:
-        return jsonify({{"error": "Model not configured"}}), 500
+        return jsonify({"error": "Model not configured"}), 500
     try:
         data = request.get_json()
         if not data:
-            return jsonify({{"error": "Invalid JSON"}}), 400
+            return jsonify({"error": "Invalid JSON"}), 400
         prompt = build_quiz_prompt(data)
         response = model.generate_content(prompt)
         repaired_json_string = extract_and_repair_json(response.text)
@@ -256,7 +256,7 @@ def generate_quiz():
         return jsonify(transformed_quiz)
     except Exception as e:
         print(f"Error in /api/generate-quiz: {e}")
-        return jsonify({{"error": str(e)}}), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/get-story', methods=['POST'])
 def get_story():
@@ -274,7 +274,7 @@ def get_story():
 @app.route('/api/evaluate-subjective', methods=['POST'])
 def evaluate_subjective():
     if not model:
-        return jsonify({{"error": "Model not configured"}}), 500
+        return jsonify({"error": "Model not configured"}), 500
     try:
         data = request.get_json()
         prompt = build_evaluate_prompt(data)
@@ -284,7 +284,7 @@ def evaluate_subjective():
         return jsonify(evaluation_json)
     except Exception as e:
         print(f"Error in /api/evaluate-subjective: {e}")
-        return jsonify({{"error": str(e)}}), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/get-feedback', methods=['POST'])
 def get_feedback():
@@ -299,6 +299,6 @@ def get_feedback():
         print(f"Error in /api/get-feedback: {e}")
         return jsonify({"error": str(e)}), 500
 
-# --- Main Execution ---
-if __name__ == '__main__':
-    app.run(port=5001, debug=True)
+
+# if __name__ == '__main__':
+#     app.run(debug=True)
