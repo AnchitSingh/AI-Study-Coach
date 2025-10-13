@@ -1,23 +1,28 @@
 import os
 import json
 import re
-import google.generativeai as genai
-from flask import Flask, request, jsonify, Response
+
+from google import genai
+from google.genai import types
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
+
 
 # --- Initialization ---
 load_dotenv()
 app = Flask(__name__)
-CORS(app) # Enable CORS for all routes
+CORS(app)
+
 
 # --- Gemini API Configuration ---
 try:
-    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    model = genai.GenerativeModel('gemini-2.0-flash-thinking-exp-1219')
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    MODEL_NAME = "gemini-2.5-flash"
 except Exception as e:
     print(f"Error configuring Gemini API: {e}")
-    model = None
+    client = None
+
 
 # --- Helper Functions ---
 def trim_and_cap(text, max_len=6000):
@@ -25,8 +30,9 @@ def trim_and_cap(text, max_len=6000):
         return ''
     return text[:max_len] if len(text) > max_len else text
 
+
 def extract_and_repair_json(text):
-    match = re.search(r'```json\s*([\s\S]*?)\s*```', text)
+    match = re.search(r'``````', text)
     if match:
         text = match.group(1)
     
@@ -51,6 +57,7 @@ def extract_and_repair_json(text):
 
     return text[start_pos:end_pos+1]
 
+
 def transform_ai_quiz_response(ai_response):
     if not isinstance(ai_response, dict):
         return ai_response
@@ -58,6 +65,7 @@ def transform_ai_quiz_response(ai_response):
     if 'questions' in transformed and isinstance(transformed['questions'], list):
         transformed['questions'] = [transform_question(q) for q in transformed['questions']]
     return transformed
+
 
 def transform_question(question):
     if not isinstance(question, dict):
@@ -85,6 +93,7 @@ def transform_question(question):
     
     return question
 
+
 def normalize_question_type(q_type):
     if not isinstance(q_type, str): return 'MCQ'
     q_type = q_type.lower()
@@ -93,6 +102,21 @@ def normalize_question_type(q_type):
     if 'fill' in q_type: return 'Fill in Blank'
     if 'short' in q_type or 'subjective' in q_type: return 'Short Answer'
     return q_type
+
+
+# --- System Instructions ---
+QUIZ_SYSTEM_INSTRUCTION = """Act as a quiz generator. Generate educational questions based on the provided content.
+Output ONLY valid JSON. No markdown, no code fences, no prose outside JSON."""
+
+STORY_SYSTEM_INSTRUCTION = """Act as a storyteller-teacher. Write engaging explanations as rich Markdown.
+Keep sentences tight and avoid long walls of text."""
+
+EVALUATE_SYSTEM_INSTRUCTION = """Act as a strict but fair grader for subjective questions.
+Return ONLY valid JSON with evaluation results."""
+
+FEEDBACK_SYSTEM_INSTRUCTION = """Act as a concise, supportive coach providing overall feedback based on quiz metrics.
+Write 5-7 short paragraphs covering performance, strengths, weaknesses, and next steps."""
+
 
 # --- Prompt Building Functions ---
 def build_quiz_prompt(data):
@@ -113,16 +137,12 @@ def build_quiz_prompt(data):
     type_distribution = [{"type": t, "count": base + (1 if i < remainder else 0)} for i, t in enumerate(final_types)]
     distribution_text = ", ".join([f"{d['count']} {d['type']}" for d in type_distribution])
 
-    return f"""<start_of_turn>user
-Act as a quiz generator. Generate educational questions based on the content.
-
-CONTENT:
+    return f"""CONTENT:
 {safe_source}
 
 STRICT REQUIREMENTS:
 - Generate EXACTLY {question_count} questions with this distribution: {distribution_text}
 - Difficulty for all questions: {difficulty}
-- Output ONLY valid JSON. No markdown, no code fences, no prose outside JSON.
 - Use IDs "q1"..."q{question_count}" in order.
 
 SCHEMA (one JSON object):
@@ -142,10 +162,8 @@ SCHEMA (one JSON object):
   ]
 }}
 
-Now return the final JSON for {distribution_text} about the content above.
-<end_of_turn>
-<start_of_turn>model
-"""
+Now return the final JSON for {distribution_text} about the content above."""
+
 
 def build_story_prompt(data):
     extracted_source = data.get('extractedSource', {})
@@ -155,18 +173,15 @@ def build_story_prompt(data):
     story_style = config.get('storyStyle', 'Simple Words')
     topic = title or 'the selected topic'
     safe_source = trim_and_cap(text, 8000)
-    style_guide = "Use everyday words and short sentences. Explain any jargon."
 
-    return f"""Act as a storyteller-teacher. Write an engaging explanation as rich Markdown.
-
-TOPIC:
+    return f"""TOPIC:
 {topic}
 
 STYLE:
 {story_style}
 
 STYLE_GUIDE:
-{style_guide}
+Use everyday words and short sentences. Explain any jargon.
 
 SOURCE_CONTENT:
 {safe_source}
@@ -176,8 +191,8 @@ OUTPUT REQUIREMENTS:
 - Keep sentences tight; avoid long walls of text.
 - Length target: 600-900 words.
 
-Begin the Markdown now.
-"""
+Begin the Markdown now."""
+
 
 def build_evaluate_prompt(data):
     question = data.get('question', {})
@@ -188,9 +203,7 @@ def build_evaluate_prompt(data):
     safe_reference = trim_and_cap(reference_answer, 1200)
     safe_user = trim_and_cap(user_answer, 1500)
 
-    return f"""Act as a strict but fair grader for ONE subjective question.
-
-QUESTION:
+    return f"""QUESTION:
 {safe_question}
 
 REFERENCE ANSWER:
@@ -205,18 +218,17 @@ Return ONLY valid JSON with this structure:
   "isCorrect": true,
   "feedback": "string",
   "explanation": "string"
-}}
-"""
+}}"""
 
-def build_overall_streaming_prompt(data):
+
+def build_overall_feedback_prompt(data):
     quiz_meta = data.get('quizMeta', {})
     stats = data.get('stats', {})
     title = quiz_meta.get('title', 'Quiz')
     subject = quiz_meta.get('subject', 'General')
     compact_stats = json.dumps(stats)
 
-    return f"""Act as a concise, supportive coach and write overall feedback based strictly on the metrics below.
-Subject: {subject}
+    return f"""Subject: {subject}
 Title: {title}
 
 Write 5-7 short paragraphs or bullet-style lines covering:
@@ -235,21 +247,36 @@ METRICS_JSON:
 
 Write the feedback now in plain text only."""
 
+
 # --- API Endpoints ---
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return jsonify({"status": "ok", "model_configured": model is not None}), 200
+    return jsonify({"status": "ok", "model_configured": client is not None}), 200
+
 
 @app.route('/api/generate-quiz', methods=['POST'])
 def generate_quiz():
-    if not model:
+    if not client:
         return jsonify({"error": "Model not configured"}), 500
     try:
         data = request.get_json()
         if not data:
             return jsonify({"error": "Invalid JSON"}), 400
+        
         prompt = build_quiz_prompt(data)
-        response = model.generate_content(prompt)
+        
+        config = types.GenerateContentConfig(
+            system_instruction=QUIZ_SYSTEM_INSTRUCTION,
+            thinking_config=types.ThinkingConfig(thinking_budget=2048),
+            max_output_tokens=8192
+        )
+        
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+            config=config
+        )
+        
         repaired_json_string = extract_and_repair_json(response.text)
         quiz_json = json.loads(repaired_json_string)
         transformed_quiz = transform_ai_quiz_response(quiz_json)
@@ -258,27 +285,53 @@ def generate_quiz():
         print(f"Error in /api/generate-quiz: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/get-story', methods=['POST'])
 def get_story():
-    if not model:
+    if not client:
         return jsonify({"error": "Model not configured"}), 500
     try:
         data = request.get_json()
         prompt = build_story_prompt(data)
-        response = model.generate_content(prompt)
+        
+        config = types.GenerateContentConfig(
+            system_instruction=STORY_SYSTEM_INSTRUCTION,
+            thinking_config=types.ThinkingConfig(thinking_budget=2048),
+            max_output_tokens=4096
+        )
+        
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+            config=config
+        )
+        
         return jsonify({"story": response.text})
     except Exception as e:
         print(f"Error in /api/get-story: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/evaluate-subjective', methods=['POST'])
 def evaluate_subjective():
-    if not model:
+    if not client:
         return jsonify({"error": "Model not configured"}), 500
     try:
         data = request.get_json()
         prompt = build_evaluate_prompt(data)
-        response = model.generate_content(prompt)
+        
+        config = types.GenerateContentConfig(
+            system_instruction=EVALUATE_SYSTEM_INSTRUCTION,
+            thinking_config=types.ThinkingConfig(thinking_budget=2048),
+            max_output_tokens=1024
+        )
+        
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+            config=config
+        )
+        
         cleaned_text = extract_and_repair_json(response.text)
         evaluation_json = json.loads(cleaned_text)
         return jsonify(evaluation_json)
@@ -286,19 +339,32 @@ def evaluate_subjective():
         print(f"Error in /api/evaluate-subjective: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/get-feedback', methods=['POST'])
 def get_feedback():
-    if not model:
+    if not client:
         return jsonify({"error": "Model not configured"}), 500
     try:
         data = request.get_json()
-        prompt = build_overall_streaming_prompt(data)
-        response = model.generate_content(prompt)
+        prompt = build_overall_feedback_prompt(data)
+        
+        config = types.GenerateContentConfig(
+            system_instruction=FEEDBACK_SYSTEM_INSTRUCTION,
+            thinking_config=types.ThinkingConfig(thinking_budget=2048),
+            max_output_tokens=2048
+        )
+        
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+            config=config
+        )
+        
         return jsonify({"feedback": response.text})
     except Exception as e:
         print(f"Error in /api/get-feedback: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
