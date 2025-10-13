@@ -12,7 +12,13 @@ from dotenv import load_dotenv
 # --- Initialization ---
 load_dotenv()
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 
 # --- Gemini API Configuration ---
@@ -366,5 +372,5 @@ def get_feedback():
         return jsonify({"error": str(e)}), 500
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
