@@ -1,7 +1,5 @@
 // src/utils/summaryProcessor.js
 
-// Chrome Summarizer API wrapper for content processing - FIXED VERSION
-
 let summarizerCache = null;
 
 // Check if Summarizer API is available

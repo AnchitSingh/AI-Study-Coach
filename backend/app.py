@@ -38,7 +38,7 @@ def trim_and_cap(text, max_len=6000):
 
 
 def extract_and_repair_json(text):
-    match = re.search(r'``````', text)
+    match = re.search(r'```(?:json)?\s*(\{.*?\}|```math.*?```)\s*```', text, re.DOTALL)
     if match:
         text = match.group(1)
     
@@ -110,101 +110,253 @@ def normalize_question_type(q_type):
     return q_type
 
 
-# --- System Instructions ---
-QUIZ_SYSTEM_INSTRUCTION = """Act as a quiz generator. Generate educational questions based on the provided content.
-Output ONLY valid JSON. No markdown, no code fences, no prose outside JSON."""
+# --- System Instructions (Complete & Detailed) ---
 
-STORY_SYSTEM_INSTRUCTION = """Act as a storyteller-teacher. Write engaging explanations as rich Markdown.
-Keep sentences tight and avoid long walls of text."""
+QUIZ_SYSTEM_INSTRUCTION = """You are an expert educational quiz generator. Your role is to create high-quality quiz questions from any provided content.
 
-EVALUATE_SYSTEM_INSTRUCTION = """Act as a strict but fair grader for subjective questions.
-Return ONLY valid JSON with evaluation results."""
+CORE CAPABILITIES:
+- Generate questions based on user-specified count and distribution
+- Support multiple question types: MCQ, True/False, Fill in Blank, Short Answer
+- Adjust difficulty levels: easy, medium, hard
+- Extract key concepts and create targeted questions
 
-FEEDBACK_SYSTEM_INSTRUCTION = """Act as a concise, supportive coach providing overall feedback based on quiz metrics.
-Write 5-7 short paragraphs covering performance, strengths, weaknesses, and next steps."""
+OUTPUT REQUIREMENTS:
+- Return ONLY valid JSON with no markdown code fences, no prose, no explanations outside JSON
+- Use sequential IDs starting from q1
+- Ensure all required fields are present
+- For MCQ and True/False: include options array with isCorrect boolean
+- For Short Answer and Fill in Blank: include answer field
+- Always include explanation field with brief reasoning
+
+JSON SCHEMA (strict):
+{
+  "questions": [
+    {
+      "id": "q1",
+      "type": "MCQ",
+      "question": "Clear, unambiguous question text",
+      "options": [
+        {"text": "Option text", "isCorrect": true},
+        {"text": "Option text", "isCorrect": false}
+      ],
+      "answer": "Only for Short Answer/Fill in Blank types",
+      "explanation": "Brief explanation or feedback",
+      "difficulty": "easy",
+      "topic": "Main topic from content",
+      "tags": ["relevant-tag-1", "relevant-tag-2"]
+    }
+  ]
+}
+
+QUESTION TYPE RULES:
+- MCQ: 4 options, exactly 1 correct
+- True/False: 2 options (True/False), exactly 1 correct
+- Fill in Blank: Use "answer" field, no options array
+- Short Answer: Use "answer" field for reference answer, no options array
+
+QUALITY STANDARDS:
+- Questions must be directly answerable from the provided content
+- Avoid ambiguous or trick questions
+- Explanations should clarify why the answer is correct
+- Distribute questions evenly across the content
+- Match specified difficulty level consistently"""
 
 
-# --- Prompt Building Functions ---
+STORY_SYSTEM_INSTRUCTION = """You are an expert educator and storyteller. Your role is to explain complex topics in engaging, easy-to-understand language using rich Markdown formatting.
+
+CORE APPROACH:
+- Break down complex concepts into digestible chunks
+- Use analogies and real-world examples
+- Build from simple foundations to advanced ideas
+- Explain jargon immediately when it appears
+- Make abstract concepts concrete and relatable
+
+OUTPUT STYLE:
+- Write in Markdown format with proper structure
+- Use headers (##, ###) to organize sections
+- Use **bold** for key terms (first mention only)
+- Use bullet points for lists
+- Use > blockquotes for important takeaways
+- Keep paragraphs short (3-4 sentences max)
+
+LANGUAGE GUIDELINES:
+- Use everyday words; avoid academic jargon
+- When technical terms are necessary, define them immediately
+- Write in active voice
+- Use "you" to address the reader directly
+- Keep sentences short and clear
+
+TARGET LENGTH:
+- Aim for 600-900 words
+- Cover the topic thoroughly but concisely
+- Don't pad with fluff
+
+STRUCTURE TEMPLATE:
+1. Hook: Start with an interesting question or relatable scenario
+2. Foundation: Explain the basics in simple terms
+3. Core concept: Build the main idea step-by-step
+4. Examples: Give 1-2 concrete examples
+5. Connection: Relate to real-world applications
+6. Summary: Brief recap of key points
+
+OUTPUT FORMAT:
+Return ONLY the Markdown content. No JSON, no code fences around the entire output."""
+
+
+EVALUATE_SYSTEM_INSTRUCTION = """You are a fair and constructive grader for subjective/short-answer questions. Your role is to evaluate student answers against reference answers and provide helpful feedback.
+
+EVALUATION CRITERIA:
+- Check if the core concept is understood, not exact wording
+- Award credit for partially correct answers
+- Identify misconceptions or missing key points
+- Provide constructive, specific feedback
+- Be encouraging while being honest
+
+OUTPUT REQUIREMENTS:
+- Return ONLY valid JSON
+- No markdown code fences, no additional text
+- Include all three required fields
+
+JSON SCHEMA (strict):
+{
+  "isCorrect": true,
+  "feedback": "Specific feedback on the student's answer - what was good, what was missing, what could be improved",
+  "explanation": "What a complete answer should include and why it matters"
+}
+
+SCORING GUIDELINES:
+- isCorrect: true if answer demonstrates understanding of core concept (even if incomplete)
+- isCorrect: false if answer is wrong, irrelevant, or shows fundamental misunderstanding
+- Partial understanding: mark true but note gaps in feedback
+
+FEEDBACK QUALITY:
+- Be specific about what the student got right
+- Point out exactly what's missing or incorrect
+- Suggest how to improve the answer
+- Keep feedback concise (2-4 sentences)
+- Use encouraging tone even when answer is incorrect"""
+
+
+FEEDBACK_SYSTEM_INSTRUCTION = """You are a supportive and insightful study coach. Your role is to provide personalized, actionable feedback based on quiz performance statistics.
+
+ANALYSIS APPROACH:
+- Review all provided metrics carefully
+- Identify patterns in performance (strengths and weaknesses)
+- Spot specific topic gaps or misconceptions
+- Provide concrete, actionable study recommendations
+- Balance encouragement with honest assessment
+
+OUTPUT STRUCTURE:
+Write 5-7 short paragraphs covering these areas:
+
+1. OVERALL PERFORMANCE
+   - Summarize score and general performance level
+   - Set context (good/needs improvement/excellent)
+
+2. STRENGTHS (3 specific points)
+   - What the student did well
+   - Which topics/concepts they've mastered
+   - Positive patterns in their approach
+
+3. WEAKNESSES (3 specific points)
+   - Which topics need work
+   - Types of questions that caused trouble
+   - Patterns in mistakes
+
+4. MISCONCEPTIONS
+   - Any incorrect understanding revealed by wrong answers
+   - Concepts that need clarification
+
+5. IMMEDIATE NEXT STEPS
+   - 3-4 specific study actions
+   - Which topics to review first
+   - Recommended study methods or resources
+
+TONE GUIDELINES:
+- Be encouraging and supportive
+- Be honest about gaps without discouraging
+- Use "you" to make it personal
+- Avoid generic advice like "study harder"
+- Give specific, actionable recommendations
+
+OUTPUT FORMAT:
+Return plain text ONLY. No markdown formatting, no JSON, no bullet points. Write in complete paragraphs with natural transitions between them.
+
+IMPORTANT:
+Base your feedback ONLY on the metrics provided. Do not make assumptions or add information not present in the statistics."""
+
+
+# --- Prompt Building Functions (Data Only) ---
+
 def build_quiz_prompt(data):
+    """Build user prompt with only data - no instructions"""
     extracted_source = data.get('extractedSource', {})
     config = data.get('config', {})
+    
     title = extracted_source.get('title', 'General')
     text = extracted_source.get('text', '')
     question_count = config.get('questionCount', 5)
     difficulty = config.get('difficulty', 'medium')
     question_types = config.get('questionTypes', ['MCQ'])
+    
     safe_source = trim_and_cap(text, 5500)
 
+    # Normalize and deduplicate question types
     final_types = list(dict.fromkeys([normalize_question_type(t) for t in question_types]))
-    if not final_types: final_types = ['MCQ']
+    if not final_types:
+        final_types = ['MCQ']
 
+    # Calculate distribution
     base = question_count // len(final_types)
     remainder = question_count % len(final_types)
-    type_distribution = [{"type": t, "count": base + (1 if i < remainder else 0)} for i, t in enumerate(final_types)]
+    type_distribution = [
+        {"type": t, "count": base + (1 if i < remainder else 0)} 
+        for i, t in enumerate(final_types)
+    ]
     distribution_text = ", ".join([f"{d['count']} {d['type']}" for d in type_distribution])
 
-    return f"""CONTENT:
+    return f"""CONTENT TO ANALYZE:
 {safe_source}
 
-STRICT REQUIREMENTS:
-- Generate EXACTLY {question_count} questions with this distribution: {distribution_text}
-- Difficulty for all questions: {difficulty}
-- Use IDs "q1"..."q{question_count}" in order.
+REQUIREMENTS FOR THIS REQUEST:
+- Total questions needed: {question_count}
+- Question distribution: {distribution_text}
+- Difficulty level: {difficulty}
+- Topic/Subject: {title}
+- Question IDs: q1 through q{question_count}
 
-SCHEMA (one JSON object):
-{{
-  "questions": [
-    {{
-      "id": "q1",
-      "type": "{final_types[0] if final_types else 'MCQ'}",
-      "question": "question text",
-      "options": [{{"text": "option", "isCorrect": true}}],
-      "answer": "for Subjective/FillUp only",
-      "explanation": "brief reason or feedback",
-      "difficulty": "{difficulty}",
-      "topic": "{title}",
-      "tags": ["tag-1","tag-2"]
-    }}
-  ]
-}}
-
-Now return the final JSON for {distribution_text} about the content above."""
+Generate the quiz now."""
 
 
 def build_story_prompt(data):
+    """Build user prompt with only data - no instructions"""
     extracted_source = data.get('extractedSource', {})
     config = data.get('config', {})
+    
     text = extracted_source.get('text', '')
-    title = extracted_source.get('title', '')
+    title = extracted_source.get('title', 'the selected topic')
     story_style = config.get('storyStyle', 'Simple Words')
-    topic = title or 'the selected topic'
+    
     safe_source = trim_and_cap(text, 8000)
 
-    return f"""TOPIC:
-{topic}
+    return f"""TOPIC: {title}
 
-STYLE:
-{story_style}
+STYLE PREFERENCE: {story_style}
 
-STYLE_GUIDE:
-Use everyday words and short sentences. Explain any jargon.
-
-SOURCE_CONTENT:
+SOURCE CONTENT:
 {safe_source}
 
-OUTPUT REQUIREMENTS:
-- Return Markdown ONLY.
-- Keep sentences tight; avoid long walls of text.
-- Length target: 600-900 words.
-
-Begin the Markdown now."""
+Explain this topic now using the specified style."""
 
 
 def build_evaluate_prompt(data):
+    """Build user prompt with only data - no instructions"""
     question = data.get('question', {})
     user_answer = data.get('userAnswer', '')
+    
     question_text = question.get('question', '')
     reference_answer = question.get('explanation', '')
+    
     safe_question = trim_and_cap(question_text, 1200)
     safe_reference = trim_and_cap(reference_answer, 1200)
     safe_user = trim_and_cap(user_answer, 1500)
@@ -218,43 +370,31 @@ REFERENCE ANSWER:
 STUDENT'S ANSWER:
 {safe_user}
 
-OUTPUT:
-Return ONLY valid JSON with this structure:
-{{
-  "isCorrect": true,
-  "feedback": "string",
-  "explanation": "string"
-}}"""
+Evaluate this answer now."""
 
 
 def build_overall_feedback_prompt(data):
+    """Build user prompt with only data - no instructions"""
     quiz_meta = data.get('quizMeta', {})
     stats = data.get('stats', {})
+    
     title = quiz_meta.get('title', 'Quiz')
     subject = quiz_meta.get('subject', 'General')
-    compact_stats = json.dumps(stats)
+    
+    compact_stats = json.dumps(stats, indent=2)
 
-    return f"""Subject: {subject}
+    return f"""QUIZ INFORMATION:
+Subject: {subject}
 Title: {title}
 
-Write 5-7 short paragraphs or bullet-style lines covering:
-- Overall score and performance profile.
-- 3 strengths (what went well).
-- 3 weaknesses (what to improve).
-- Any misconceptions observed.
-- Immediate next steps for study.
-
-Rules:
-- Plain text only. No markdown, no JSON.
-- Base everything ONLY on the provided metrics.
-
-METRICS_JSON:
+PERFORMANCE METRICS:
 {compact_stats}
 
-Write the feedback now in plain text only."""
+Provide personalized feedback now."""
 
 
 # --- API Endpoints ---
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "ok", "model_configured": client is not None}), 200
@@ -372,5 +512,5 @@ def get_feedback():
         return jsonify({"error": str(e)}), 500
 
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)

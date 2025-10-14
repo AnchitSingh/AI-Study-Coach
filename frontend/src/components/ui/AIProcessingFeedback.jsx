@@ -117,7 +117,7 @@ const AIProcessingFeedback = ({
 
                 {/* Fun subtitle */}
                 <p className="text-sm text-slate-500">
-                    Chrome's built-in AI is working its magic...
+                    Gemini is working its magic...
                 </p>
 
                 {/* Cancel button - optional */}

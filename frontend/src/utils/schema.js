@@ -138,7 +138,7 @@ export function validateQuiz(obj) {
 
 /**
  * Validates an AI evaluation response
- * Matches what chromeAI.evaluateSubjectiveJSON returns
+ * Matches what Gemini AI.evaluateSubjectiveJSON returns
  */
 export function validateEvaluation(obj) {
     if (!isObject(obj)) {
@@ -146,7 +146,7 @@ export function validateEvaluation(obj) {
         return false;
     }
 
-    // ⭐ Match what chromeAI actually returns
+    // ⭐ Match what  Gemini AI actually returns
     if (typeof obj.isCorrect !== 'boolean') {
         console.error('Evaluation validation failed: isCorrect is not a boolean');
         return false;

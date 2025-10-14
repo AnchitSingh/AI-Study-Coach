@@ -229,7 +229,7 @@ class AiStudyCoachAPI {
     }
 
     // --------------------------------------------------------------------------
-    // CHROME AI INTEGRATION
+    // GEMINI AI INTEGRATION
     // --------------------------------------------------------------------------
 
     async getAIStatus() {
@@ -268,7 +268,7 @@ class AiStudyCoachAPI {
 
             return createSuccessResponse(quiz);
         } catch (error) {
-            console.error('Chrome AI Quiz Generation Error:', error);
+            console.error('Gemini AI Quiz Generation Error:', error);
             return createErrorResponse(error);
         }
     }
@@ -412,13 +412,13 @@ class AiStudyCoachAPI {
         return {
             id: generateId(),
             title: config.title || `AI Generated Quiz - ${new Date().toLocaleDateString()}`,
-            description: config.description || "Quiz generated using Chrome's built-in AI",
+            description: config.description || "Quiz generated using Gemini's built-in AI",
             questions: transformedQuestions,
             totalQuestions: transformedQuestions.length,
             config: this._createQuizConfig(config),
             createdAt: new Date().toISOString(),
             metadata: {
-                source: 'chrome-ai',
+                source: 'gemini-ai',
                 model: 'gemini-nano',
                 generationTime: aiResult.generationTime,
                 questionCount: transformedQuestions.length,
