@@ -412,7 +412,7 @@ class AiStudyCoachAPI {
         return {
             id: generateId(),
             title: config.title || `AI Generated Quiz - ${new Date().toLocaleDateString()}`,
-            description: config.description || "Quiz generated using Gemini's built-in AI",
+            description: config.description || "Quiz generated using Gemini AI",
             questions: transformedQuestions,
             totalQuestions: transformedQuestions.length,
             config: this._createQuizConfig(config),
