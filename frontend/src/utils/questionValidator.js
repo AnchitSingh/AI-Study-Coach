@@ -14,10 +14,10 @@ export const validateQuestionStructure = (question) => {
 
   // Check if question is an object
   if (!question || typeof question !== 'object' || Array.isArray(question)) {
-    return { 
-      valid: false, 
-      errors: ['Question is not a valid object'], 
-      warnings: [] 
+    return {
+      valid: false,
+      errors: ['Question is not a valid object'],
+      warnings: [],
     };
   }
 
@@ -33,7 +33,9 @@ export const validateQuestionStructure = (question) => {
   if (typeof question.type !== 'string') {
     errors.push('Question type is missing or not a string');
   } else if (!validTypes.includes(question.type)) {
-    errors.push(`Invalid question type: "${question.type}". Must be one of: ${validTypes.join(', ')}`);
+    errors.push(
+      `Invalid question type: "${question.type}". Must be one of: ${validTypes.join(', ')}`
+    );
   }
 
   // Type-specific validation
@@ -63,14 +65,14 @@ export const validateQuestionStructure = (question) => {
       });
 
       // Validate at least one correct answer
-      const hasCorrectAnswer = question.options.some(opt => opt && opt.isCorrect === true);
+      const hasCorrectAnswer = question.options.some((opt) => opt && opt.isCorrect === true);
       if (!hasCorrectAnswer) {
         errors.push('At least one option must be marked as correct');
       }
 
       // Check for multiple correct answers in True/False
       if (question.type === 'True/False') {
-        const correctCount = question.options.filter(opt => opt && opt.isCorrect === true).length;
+        const correctCount = question.options.filter((opt) => opt && opt.isCorrect === true).length;
         if (correctCount > 1) {
           errors.push('True/False questions must have exactly one correct answer');
         }
@@ -99,7 +101,9 @@ export const validateQuestionStructure = (question) => {
   if (question.type === 'Short Answer' || question.type === 'Subjective') {
     // AI-evaluated - just needs question text and optional model answer
     if (!question.answer && !question.explanation) {
-      warnings.push('Short Answer question should have a model answer or explanation for better AI evaluation');
+      warnings.push(
+        'Short Answer question should have a model answer or explanation for better AI evaluation'
+      );
     }
   }
 
@@ -123,7 +127,7 @@ export const validateQuestionStructure = (question) => {
     if (!Array.isArray(question.tags)) {
       warnings.push('Tags should be an array');
     } else {
-      const invalidTags = question.tags.filter(tag => typeof tag !== 'string');
+      const invalidTags = question.tags.filter((tag) => typeof tag !== 'string');
       if (invalidTags.length > 0) {
         warnings.push(`${invalidTags.length} tag(s) are not strings`);
       }
@@ -133,7 +137,7 @@ export const validateQuestionStructure = (question) => {
   return {
     valid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 };
 
@@ -183,8 +187,8 @@ export const sanitizeQuestion = (question, index = 0) => {
   // Sanitize tags
   if (Array.isArray(question.tags)) {
     sanitized.tags = question.tags
-      .filter(tag => typeof tag === 'string' && tag.trim())
-      .map(tag => tag.trim());
+      .filter((tag) => typeof tag === 'string' && tag.trim())
+      .map((tag) => tag.trim());
   } else {
     sanitized.tags = [];
   }
@@ -197,7 +201,11 @@ export const sanitizeQuestion = (question, index = 0) => {
       console.error('Failed to sanitize options, cannot recover question');
       return null;
     }
-  } else if (sanitized.type === 'Fill in Blank' || sanitized.type === 'Short Answer' || sanitized.type === 'Subjective') {
+  } else if (
+    sanitized.type === 'Fill in Blank' ||
+    sanitized.type === 'Short Answer' ||
+    sanitized.type === 'Subjective'
+  ) {
     // AI-evaluated - just needs model answer (optional but helpful)
     sanitized.answer = normalizeToString(question.answer) || '';
   }
@@ -238,7 +246,7 @@ function sanitizeOptions(options, questionType) {
 
       const sanitizedOption = {
         text: normalizeToString(option.text || option),
-        isCorrect: Boolean(option.isCorrect)
+        isCorrect: Boolean(option.isCorrect),
       };
 
       if (!sanitizedOption.text) {
@@ -248,7 +256,7 @@ function sanitizeOptions(options, questionType) {
 
       return sanitizedOption;
     })
-    .filter(opt => opt !== null);
+    .filter((opt) => opt !== null);
 
   // Ensure minimum options
   if (sanitizedOptions.length < 2) {
@@ -257,7 +265,7 @@ function sanitizeOptions(options, questionType) {
   }
 
   // Ensure at least one correct answer
-  const hasCorrect = sanitizedOptions.some(opt => opt.isCorrect);
+  const hasCorrect = sanitizedOptions.some((opt) => opt.isCorrect);
   if (!hasCorrect) {
     console.warn('No correct answer found, marking first option as correct');
     sanitizedOptions[0].isCorrect = true;
@@ -269,7 +277,7 @@ function sanitizeOptions(options, questionType) {
       sanitizedOptions.length = 2;
     }
     // Ensure one is True and one is False
-    const correctCount = sanitizedOptions.filter(opt => opt.isCorrect).length;
+    const correctCount = sanitizedOptions.filter((opt) => opt.isCorrect).length;
     if (correctCount !== 1) {
       sanitizedOptions[0].isCorrect = true;
       sanitizedOptions[1].isCorrect = false;
@@ -286,7 +294,7 @@ function createDefaultOptions(questionType) {
   if (questionType === 'True/False') {
     return [
       { text: 'True', isCorrect: true },
-      { text: 'False', isCorrect: false }
+      { text: 'False', isCorrect: false },
     ];
   }
 
@@ -294,7 +302,7 @@ function createDefaultOptions(questionType) {
     { text: 'Option A', isCorrect: true },
     { text: 'Option B', isCorrect: false },
     { text: 'Option C', isCorrect: false },
-    { text: 'Option D', isCorrect: false }
+    { text: 'Option D', isCorrect: false },
   ];
 }
 
@@ -309,7 +317,7 @@ export const validateQuizStructure = (quiz) => {
     return {
       valid: false,
       errors: ['Quiz is not a valid object'],
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -335,8 +343,8 @@ export const validateQuizStructure = (quiz) => {
     errors,
     warnings,
     totalQuestions: Array.isArray(quiz.questions) ? quiz.questions.length : 0,
-    validQuestions: Array.isArray(quiz.questions) 
-      ? quiz.questions.filter(q => validateQuestionStructure(q).valid).length 
-      : 0
+    validQuestions: Array.isArray(quiz.questions)
+      ? quiz.questions.filter((q) => validateQuestionStructure(q).valid).length
+      : 0,
   };
 };

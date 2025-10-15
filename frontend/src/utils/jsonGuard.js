@@ -31,11 +31,7 @@ function extractJsonBlock(text) {
   text = text.trim();
 
   // Try to extract from markdown code blocks
-  const fencePatterns = [
-    /```json\s*([\s\S]*?)```/i,
-    /```\s*([\s\S]*?)```/i,
-    /`([\s\S]*?)`/
-  ];
+  const fencePatterns = [/```json\s*([\s\S]*?)```/i, /```\s*([\s\S]*?)```/i, /`([\s\S]*?)`/];
 
   for (const pattern of fencePatterns) {
     const match = text.match(pattern);
@@ -48,10 +44,10 @@ function extractJsonBlock(text) {
   // Find first complete JSON object or array
   const firstBrace = text.indexOf('{');
   const firstBracket = text.indexOf('[');
-  
+
   let start = -1;
   let startChar = '';
-  
+
   if (firstBrace >= 0 && (firstBrace < firstBracket || firstBracket < 0)) {
     start = firstBrace;
     startChar = '{';
@@ -59,37 +55,37 @@ function extractJsonBlock(text) {
     start = firstBracket;
     startChar = '[';
   }
-  
+
   if (start < 0) {
     return text.trim();
   }
-  
+
   // Find matching closing bracket/brace
   let depth = 0;
   let inString = false;
   let escapeNext = false;
   const endChar = startChar === '{' ? '}' : ']';
-  
+
   for (let i = start; i < text.length; i++) {
     const char = text[i];
-    
+
     // Handle escape sequences
     if (escapeNext) {
       escapeNext = false;
       continue;
     }
-    
+
     if (char === '\\') {
       escapeNext = true;
       continue;
     }
-    
+
     // Handle strings
     if (char === '"' && !escapeNext) {
       inString = !inString;
       continue;
     }
-    
+
     // Only count brackets/braces outside of strings
     if (!inString) {
       if (char === startChar) {
@@ -102,7 +98,7 @@ function extractJsonBlock(text) {
       }
     }
   }
-  
+
   // If we couldn't find matching bracket, return from start to end
   return text.slice(start).trim();
 }
@@ -114,9 +110,9 @@ function normalizeQuotes(jsonish) {
   if (typeof jsonish !== 'string') {
     return '';
   }
-  
+
   return jsonish
-    .replace(/[""]/g, '"')  // Smart quotes to regular quotes
+    .replace(/[""]/g, '"') // Smart quotes to regular quotes
     .replace(/['']/g, "'"); // Smart single quotes to regular
 }
 
@@ -131,7 +127,7 @@ function cleanupJson(jsonText) {
   let cleaned = jsonText;
 
   // Remove BOM if present
-  if (cleaned.charCodeAt(0) === 0xFEFF) {
+  if (cleaned.charCodeAt(0) === 0xfeff) {
     cleaned = cleaned.slice(1);
   }
 
@@ -174,7 +170,7 @@ export async function parseWithRepair({ raw, schema, validate, repairFn }) {
   // Attempt 1: Direct parse
   let result = tryParse(raw);
   attempts.push({ method: 'direct parse', success: result.ok });
-  
+
   if (result.ok) {
     if (!validate || validate(result.value)) {
       return result.value;
@@ -186,10 +182,10 @@ export async function parseWithRepair({ raw, schema, validate, repairFn }) {
   const block = extractJsonBlock(raw);
   const normalized = normalizeQuotes(block);
   const cleaned = cleanupJson(normalized);
-  
+
   result = tryParse(cleaned);
   attempts.push({ method: 'extract + normalize + clean', success: result.ok });
-  
+
   if (result.ok) {
     if (!validate || validate(result.value)) {
       return result.value;
@@ -200,7 +196,7 @@ export async function parseWithRepair({ raw, schema, validate, repairFn }) {
   // Attempt 3: Try just the extracted block
   result = tryParse(block);
   attempts.push({ method: 'extract only', success: result.ok });
-  
+
   if (result.ok) {
     if (!validate || validate(result.value)) {
       return result.value;
@@ -211,31 +207,28 @@ export async function parseWithRepair({ raw, schema, validate, repairFn }) {
   // Attempt 4: Model-assisted repair if provided
   if (typeof repairFn === 'function') {
     try {
-      
       const repairedText = await repairFn(cleaned || block || raw);
-      
+
       if (repairedText && typeof repairedText === 'string') {
         result = tryParse(repairedText);
         attempts.push({ method: 'AI repair direct', success: result.ok });
-        
+
         if (result.ok) {
           if (!validate || validate(result.value)) {
-            
             return result.value;
           }
           attempts.push({ method: 'AI repair validation', success: false });
         }
-        
+
         // Try extracting from repaired text
         const repairedBlock = extractJsonBlock(repairedText);
         const repairedCleaned = cleanupJson(normalizeQuotes(repairedBlock));
-        
+
         result = tryParse(repairedCleaned);
         attempts.push({ method: 'AI repair + extract', success: result.ok });
-        
+
         if (result.ok) {
           if (!validate || validate(result.value)) {
-            
             return result.value;
           }
           attempts.push({ method: 'AI repair + extract validation', success: false });
@@ -250,13 +243,13 @@ export async function parseWithRepair({ raw, schema, validate, repairFn }) {
   // All attempts failed - throw detailed error
   const preview = (raw || '').slice(0, 500);
   const attemptsSummary = attempts
-    .map(a => `  - ${a.method}: ${a.success ? 'OK' : 'FAILED'}${a.error ? ` (${a.error})` : ''}`)
+    .map((a) => `  - ${a.method}: ${a.success ? 'OK' : 'FAILED'}${a.error ? ` (${a.error})` : ''}`)
     .join('\n');
-  
+
   throw new Error(
     `Failed to parse and validate JSON after ${attempts.length} attempts.\n\n` +
-    `Attempts:\n${attemptsSummary}\n\n` +
-    `Preview of raw data:\n${preview}${raw.length > 500 ? '...' : ''}`
+      `Attempts:\n${attemptsSummary}\n\n` +
+      `Preview of raw data:\n${preview}${raw.length > 500 ? '...' : ''}`
   );
 }
 

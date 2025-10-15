@@ -42,10 +42,10 @@ function createEmptyQuiz(errorMessage = 'Invalid quiz data') {
       immediateFeedback: true,
       timerEnabled: false,
       totalTimer: 600,
-      questionTimer: 0
+      questionTimer: 0,
     },
     error: errorMessage,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
 }
 
@@ -60,29 +60,22 @@ function normalizeConfig(config) {
       totalTimer: 600,
       questionTimer: 0,
       difficulty: 'medium',
-      subject: 'General'
+      subject: 'General',
     };
   }
 
   return {
-    immediateFeedback: typeof config.immediateFeedback === 'boolean' 
-      ? config.immediateFeedback 
-      : true,
-    timerEnabled: typeof config.timerEnabled === 'boolean' 
-      ? config.timerEnabled 
-      : true,
-    totalTimer: typeof config.totalTimer === 'number' && config.totalTimer > 0
-      ? config.totalTimer 
-      : 600,
-    questionTimer: typeof config.questionTimer === 'number' && config.questionTimer >= 0
-      ? config.questionTimer 
-      : 0,
-    difficulty: typeof config.difficulty === 'string' 
-      ? config.difficulty 
-      : 'medium',
-    subject: typeof config.subject === 'string' 
-      ? config.subject 
-      : 'General'
+    immediateFeedback:
+      typeof config.immediateFeedback === 'boolean' ? config.immediateFeedback : true,
+    timerEnabled: typeof config.timerEnabled === 'boolean' ? config.timerEnabled : true,
+    totalTimer:
+      typeof config.totalTimer === 'number' && config.totalTimer > 0 ? config.totalTimer : 600,
+    questionTimer:
+      typeof config.questionTimer === 'number' && config.questionTimer >= 0
+        ? config.questionTimer
+        : 0,
+    difficulty: typeof config.difficulty === 'string' ? config.difficulty : 'medium',
+    subject: typeof config.subject === 'string' ? config.subject : 'General',
   };
 }
 
@@ -136,13 +129,13 @@ export function normalizeQuizData(quizData) {
     try {
       // Validate question structure
       const validation = validateQuestionStructure(question);
-      
+
       if (validation.valid) {
         // Sanitize the question
         const sanitized = sanitizeQuestion(question, index);
         if (sanitized) {
           normalizedQuestions.push(sanitized);
-          
+
           // Log warnings if any
           if (validation.warnings.length > 0) {
             console.warn(`Question ${index + 1} warnings:`, validation.warnings);
@@ -221,13 +214,13 @@ export function validateNormalizedQuiz(quiz) {
 export function normalizeSingleQuestion(question, index = 0) {
   try {
     const validation = validateQuestionStructure(question);
-    
+
     if (!validation.valid && validation.errors.length > 0) {
       console.warn(`Question validation warnings:`, validation.errors);
     }
 
     const sanitized = sanitizeQuestion(question, index);
-    
+
     if (!sanitized) {
       throw new Error('Failed to sanitize question');
     }

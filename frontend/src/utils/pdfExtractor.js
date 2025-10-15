@@ -37,6 +37,6 @@ export async function extractTextFromPDF(input) {
 
   return {
     text: fullText.trim(),
-    meta
+    meta,
   };
 }

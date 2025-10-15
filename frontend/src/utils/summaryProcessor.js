@@ -4,29 +4,29 @@ let summarizerCache = null;
 
 // Check if Summarizer API is available
 export async function checkSummarizerAvailability() {
-    if (typeof window === 'undefined' || !window.ai?.summarizer) {
-      if (!window.Summarizer) {
-        return { available: false, reason: 'API not supported in this browser' };
-      }
-    }
-  
-    try {
-      const availability = await window.ai?.summarizer?.availability() || await window.Summarizer?.availability();
-      
-      // FIX: Accept both 'readily' AND 'available' as valid
-      const isAvailable = availability === 'readily' || availability === 'available';
-      
-      return {
-        available: isAvailable,
-        status: availability,
-        downloadNeeded: availability === 'available',  // Model needs download
-        reason: !isAvailable ? `Model status: ${availability}` : null
-      };
-    } catch (error) {
-      return { available: false, reason: error.message };
+  if (typeof window === 'undefined' || !window.ai?.summarizer) {
+    if (!window.Summarizer) {
+      return { available: false, reason: 'API not supported in this browser' };
     }
   }
-  
+
+  try {
+    const availability =
+      (await window.ai?.summarizer?.availability()) || (await window.Summarizer?.availability());
+
+    // FIX: Accept both 'readily' AND 'available' as valid
+    const isAvailable = availability === 'readily' || availability === 'available';
+
+    return {
+      available: isAvailable,
+      status: availability,
+      downloadNeeded: availability === 'available', // Model needs download
+      reason: !isAvailable ? `Model status: ${availability}` : null,
+    };
+  } catch (error) {
+    return { available: false, reason: error.message };
+  }
+}
 
 // Create a summarizer with quiz-focused context
 export async function createSummarizer(options = {}) {
@@ -34,7 +34,7 @@ export async function createSummarizer(options = {}) {
     quizTopic = '',
     subject = 'General',
     difficulty = 'medium',
-    questionTypes = []
+    questionTypes = [],
   } = options;
 
   // Build context to focus summarization on quiz needs
@@ -49,7 +49,7 @@ export async function createSummarizer(options = {}) {
   try {
     // Use either window.ai.summarizer or window.Summarizer (legacy)
     const SummarizerAPI = window.ai?.summarizer || window.Summarizer;
-    
+
     if (!SummarizerAPI) {
       throw new Error('Summarizer API not found');
     }
@@ -58,7 +58,7 @@ export async function createSummarizer(options = {}) {
       sharedContext,
       type: 'key-points',
       format: 'plain-text',
-      length: 'medium'
+      length: 'medium',
     });
 
     summarizerCache = summarizer;
@@ -79,7 +79,7 @@ export async function summarizeChunk(chunk, summarizer, options = {}) {
   try {
     // Use summarize() with optional context
     const summary = await summarizer.summarize(chunk.text, {
-      context: context || 'Extract key educational concepts and facts'
+      context: context || 'Extract key educational concepts and facts',
     });
 
     return {
@@ -88,7 +88,7 @@ export async function summarizeChunk(chunk, summarizer, options = {}) {
       summaryLength: summary.length,
       summary: summary.trim(),
       tokenEstimate: Math.round(summary.length / 4),
-      processingTime: Date.now()
+      processingTime: Date.now(),
     };
   } catch (error) {
     throw new Error(`Summarization failed for ${chunk.id}: ${error.message}`);
@@ -117,12 +117,12 @@ export async function processChunks(chunks, quizConfig = {}, onProgress = null) 
           current: processedCount + 1,
           total: chunks.length,
           chunkId: chunk.id,
-          status: 'processing'
+          status: 'processing',
         });
       }
 
       const result = await summarizeChunk(chunk, summarizer, {
-        context: `Educational content for ${quizConfig.subject || 'general'} quiz`
+        context: `Educational content for ${quizConfig.subject || 'general'} quiz`,
       });
 
       results.push(result);
@@ -134,13 +134,12 @@ export async function processChunks(chunks, quizConfig = {}, onProgress = null) 
           total: chunks.length,
           chunkId: chunk.id,
           status: 'completed',
-          result
+          result,
         });
       }
-
     } catch (error) {
       console.error(`Failed to process chunk ${chunk.id}:`, error);
-      
+
       // Add fallback with original text (truncated)
       results.push({
         id: chunk.id,
@@ -149,7 +148,7 @@ export async function processChunks(chunks, quizConfig = {}, onProgress = null) 
         summaryLength: Math.min(2000, chunk.text.length),
         tokenEstimate: Math.round(Math.min(2000, chunk.text.length) / 4),
         error: error.message,
-        fallback: true
+        fallback: true,
       });
       processedCount++;
     }
@@ -174,22 +173,26 @@ export function assembleSummaries(summaryResults) {
     return { text: '', wordCount: 0, meta: { summaries: 0 } };
   }
 
-  const validSummaries = summaryResults.filter(r => r.summary && r.summary.trim());
-  const combinedText = validSummaries.map(r => r.summary).join('\n\n');
-  
+  const validSummaries = summaryResults.filter((r) => r.summary && r.summary.trim());
+  const combinedText = validSummaries.map((r) => r.summary).join('\n\n');
+
   const meta = {
     summaries: validSummaries.length,
     totalOriginalLength: summaryResults.reduce((sum, r) => sum + (r.originalLength || 0), 0),
     totalSummaryLength: validSummaries.reduce((sum, r) => sum + (r.summaryLength || 0), 0),
-    compressionRatio: summaryResults.reduce((sum, r) => sum + (r.originalLength || 0), 0) / 
-                     Math.max(1, validSummaries.reduce((sum, r) => sum + (r.summaryLength || 0), 0)),
-    fallbacks: summaryResults.filter(r => r.fallback).length,
-    errors: summaryResults.filter(r => r.error).length
+    compressionRatio:
+      summaryResults.reduce((sum, r) => sum + (r.originalLength || 0), 0) /
+      Math.max(
+        1,
+        validSummaries.reduce((sum, r) => sum + (r.summaryLength || 0), 0)
+      ),
+    fallbacks: summaryResults.filter((r) => r.fallback).length,
+    errors: summaryResults.filter((r) => r.error).length,
   };
 
   return {
     text: combinedText,
     wordCount: combinedText.split(/\s+/).length,
-    meta
+    meta,
   };
 }

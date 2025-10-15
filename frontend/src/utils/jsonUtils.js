@@ -21,9 +21,10 @@ export function sanitizeJSON(jsonString) {
   cleaned = cleaned.trim();
 
   // Replace escaped control characters within strings
-  return cleaned.replace(/\n/g, "\\n")
-                .replace(/\t/g, "\\t")
-                .replace(/\r/g, "\\r")
-                .replace(/\b/g, "\\b")
-                .replace(/\f/g, "\\f");
+  return cleaned
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t')
+    .replace(/\r/g, '\\r')
+    .replace(/\b/g, '\\b')
+    .replace(/\f/g, '\\f');
 }

@@ -18,26 +18,22 @@ const App = () => {
     const hasVisited = localStorage.getItem('aistudycoach_visited');
     return hasVisited ? 'home' : 'landing';
   });
-  
+
   const [navigationData, setNavigationData] = useState(null); // Store navigation data
   const [storyContent, setStoryContent] = useState(null); // Store streaming story content
   const [hasInitialized, setHasInitialized] = useState(false);
 
   React.useEffect(() => {
     if (hasInitialized) return;
-    
-    
+
     const hasVisited = localStorage.getItem('aistudycoach_visited');
-    
-    
+
     if (!hasVisited) {
-      
       setCurrentPage('landing');
     } else {
-      
       setCurrentPage('home');
     }
-    
+
     setHasInitialized(true);
   }, [hasInitialized]);
 
@@ -49,18 +45,15 @@ const App = () => {
   }, []);
 
   const navigateTo = (page, data = null) => {
-    
-    
     if (currentPage === 'landing' && page === 'home') {
       localStorage.setItem('aistudycoach_visited', 'true');
-      
     }
-    
+
     // Handle story streaming updates without changing pages
     if (currentPage === 'story' && page === 'story' && data?.storyContent) {
       // Update story content without changing page if navigating to same page with new content
       setStoryContent(data.storyContent);
-      setNavigationData(prev => ({...prev, ...data}));
+      setNavigationData((prev) => ({ ...prev, ...data }));
       return;
     }
 
@@ -73,16 +66,14 @@ const App = () => {
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
       const messageListener = (message, sender, sendResponse) => {
         if (message.type === 'START_QUIZ_FROM_SELECTION') {
-          
           navigateTo('home', { openQuizSetup: true, selectionText: message.text });
         } else if (message.type === 'START_STORY_FROM_SELECTION') {
-          
           navigateTo('home', { openStorySetup: true, selectionText: message.text });
         }
       };
-      
+
       chrome.runtime.onMessage.addListener(messageListener);
-      
+
       return () => {
         chrome.runtime.onMessage.removeListener(messageListener);
       };
@@ -94,27 +85,28 @@ const App = () => {
     setHasInitialized(false);
     setCurrentPage('landing');
     setNavigationData(null);
-    
   };
 
   return (
     <ProfileProvider>
-      <Toaster position="top-right" toastOptions={{
-        duration: 3000,
-        style: {
-          background: '#fff',
-          color: '#333',
-          borderRadius: '12px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-        },
-      }} containerStyle={{
-        zIndex: 99999,
-      }} />
-      
-      {currentPage === 'landing' && (
-        <LandingPage onGetStarted={() => navigateTo('home')} />
-      )}
-      
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#fff',
+            color: '#333',
+            borderRadius: '12px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          },
+        }}
+        containerStyle={{
+          zIndex: 99999,
+        }}
+      />
+
+      {currentPage === 'landing' && <LandingPage onGetStarted={() => navigateTo('home')} />}
+
       {currentPage === 'home' && (
         <HomePage onNavigate={navigateTo} navigationData={navigationData} />
       )}
@@ -128,34 +120,25 @@ const App = () => {
       )}
 
       {currentPage === 'story' && (
-        <StoryPage 
-          onNavigate={navigateTo} 
-          storyContent={storyContent || navigationData?.storyContent} 
+        <StoryPage
+          onNavigate={navigateTo}
+          storyContent={storyContent || navigationData?.storyContent}
           initialConfig={navigationData?.storyConfig}
           isStreaming={navigationData?.isStreaming}
         />
       )}
-      
+
       {currentPage === 'quiz' && (
         <QuizErrorBoundary>
-        <QuizPage 
-          onNavigate={navigateTo} 
-          quizConfig={navigationData?.quizConfig}
-        />
+          <QuizPage onNavigate={navigateTo} quizConfig={navigationData?.quizConfig} />
         </QuizErrorBoundary>
       )}
-      
-      {currentPage === 'bookmarks' && (
-        <BookmarksPage onNavigate={navigateTo} />
-      )}
-      
-      {currentPage === 'paused' && (
-        <PausedQuizzesPage onNavigate={navigateTo} />
-      )}
-      
-      {currentPage === 'stats' && (
-        <GlobalStatsPage onNavigate={navigateTo} />
-      )}
+
+      {currentPage === 'bookmarks' && <BookmarksPage onNavigate={navigateTo} />}
+
+      {currentPage === 'paused' && <PausedQuizzesPage onNavigate={navigateTo} />}
+
+      {currentPage === 'stats' && <GlobalStatsPage onNavigate={navigateTo} />}
     </ProfileProvider>
   );
 };
