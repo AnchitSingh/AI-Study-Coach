@@ -2,12 +2,11 @@
 
 // Enhanced extractor with summarization integration
 
-import { cleanToPromptReady, buildExcerpt } from './contentCleaner';
+import cleanSelectionText, {buildExcerpt} from './contentCleaner';
 import { chunkText, shouldSummarize } from './textChunker';
 import { processChunks, assembleSummaries, checkSummarizerAvailability } from './summaryProcessor';
 import { extractReadableFromHTML } from './readabilityClient';
 import { SOURCE_TYPE } from './messages';
-import extractionService from '../services/extraction';
 
 async function finalizeSource({
   sourceType,
@@ -16,21 +15,14 @@ async function finalizeSource({
   rawText,
   meta = {},
   quizConfig = {},
-  onProgress = null,
+  onProgress = null
 }) {
-  const text = cleanToPromptReady(rawText || '');
+  const text = cleanSelectionText(rawText || '');
   const wordCount = text ? text.split(/\s+/).length : 0;
-  const excerpt = buildExcerpt(text);
   const chunks = chunkText(text);
 
-  chunks.forEach((chunk, index) => {});
-
   const domain = (() => {
-    try {
-      return url ? new URL(url).hostname : '';
-    } catch {
-      return '';
-    }
+    try { return url ? new URL(url).hostname : ''; } catch { return ''; }
   })();
 
   let finalText = text;
@@ -38,49 +30,55 @@ async function finalizeSource({
     chunksCreated: chunks.length,
     originalWordCount: wordCount,
     summarizationAttempted: false,
-    summarizationSucceeded: false,
+    summarizationSucceeded: false
   };
 
   // Check if summarization is needed and available
   const needsSummarization = shouldSummarize(chunks);
 
+
   if (needsSummarization) {
+
     try {
       if (onProgress) {
         onProgress({
           status: 'checking-summarizer',
-          message: 'Checking AI summarizer availability...',
+          message: 'Checking AI summarizer availability...'
         });
       }
 
       const availability = await checkSummarizerAvailability();
 
+
       if (availability.available) {
+
         if (onProgress) {
           onProgress({
             status: 'summarizing',
             message: `Processing ${chunks.length} chunks with AI...`,
-            chunks: chunks.length,
+            chunks: chunks.length
           });
         }
 
         processingMeta.summarizationAttempted = true;
 
         const summaryResults = await processChunks(chunks, quizConfig, (progress) => {
+
           if (onProgress) {
             onProgress({
               status: 'summarizing-chunk',
               message: `Processing chunk ${progress.current}/${progress.total}...`,
-              progress: Math.round((progress.current / progress.total) * 100),
+              progress: Math.round((progress.current / progress.total) * 100)
             });
           }
         });
+
 
         const assembled = assembleSummaries(summaryResults);
         console.log('🎯 Assembled summary:', {
           wordCount: assembled.wordCount,
           textLength: assembled.text?.length,
-          meta: assembled.meta,
+          meta: assembled.meta
         });
 
         if (assembled.text && assembled.wordCount > 50) {
@@ -89,16 +87,18 @@ async function finalizeSource({
             ...processingMeta,
             summarizationSucceeded: true,
             ...assembled.meta,
-            finalWordCount: assembled.wordCount,
+            finalWordCount: assembled.wordCount
           };
+
 
           if (onProgress) {
             onProgress({
               status: 'summarization-complete',
-              message: `Summarized to ${assembled.wordCount} words (${Math.round(assembled.meta.compressionRatio)}x compression)`,
+              message: `Summarized to ${assembled.wordCount} words (${Math.round(assembled.meta.compressionRatio)}x compression)`
             });
           }
         } else {
+
         }
       } else {
         console.warn('🎯 Summarizer not available:', availability.reason);
@@ -106,7 +106,7 @@ async function finalizeSource({
           onProgress({
             status: 'summarizer-unavailable',
             message: `AI summarizer unavailable: ${availability.reason}. Using first chunk.`,
-            warning: true,
+            warning: true
           });
         }
         // Fallback to first chunk
@@ -118,7 +118,7 @@ async function finalizeSource({
         onProgress({
           status: 'summarization-failed',
           message: `Summarization failed: ${error.message}. Using first chunk.`,
-          error: true,
+          error: true
         });
       }
       // Fallback to first chunk
@@ -130,13 +130,16 @@ async function finalizeSource({
     if (onProgress) {
       onProgress({
         status: 'no-summarization-needed',
-        message: 'Content is small enough, no summarization needed.',
+        message: 'Content is small enough, no summarization needed.'
       });
     }
   }
 
   // Rechunk the final text for quiz generation
   const finalChunks = chunkText(finalText);
+
+
+
 
   return {
     sourceType,
@@ -149,75 +152,16 @@ async function finalizeSource({
     text: finalText,
     meta: {
       ...meta,
-      processing: processingMeta,
-    },
+      processing: processingMeta
+    }
   };
 }
 
-export async function extractFromCurrentPage(quizConfig = {}, onProgress = null) {
-  if (onProgress) {
-    onProgress({ status: 'extracting-dom', message: 'Extracting page content...' });
-  }
 
-  // Check if a specific tab was selected
-  let extractionResult;
-  if (quizConfig.selectedTab && quizConfig.selectedTab.id) {
-    // Extract from the specific selected tab
-    extractionResult = await extractionService.getDOMHTML(quizConfig.selectedTab.id);
-  } else {
-    // Extract from the current active tab
-    extractionResult = await extractionService.getDOMHTML();
-  }
 
-  const { html, title, url } = extractionResult;
 
-  if (onProgress) {
-    onProgress({
-      status: 'processing-readability',
-      message: `Processing with Readability...`,
-      tabTitle: quizConfig.selectedTab?.title || title,
-    });
-  }
 
-  const readable = extractReadableFromHTML(html, url);
-
-  return finalizeSource({
-    sourceType: SOURCE_TYPE.PAGE,
-    title: readable.title || title || quizConfig.selectedTab?.title,
-    url: url || quizConfig.selectedTab?.url || '',
-    rawText: readable.text,
-    meta: {
-      byline: readable.byline || '',
-      length: readable.length || 0,
-      selectedTab: quizConfig.selectedTab, // Include selected tab info in meta
-    },
-    quizConfig,
-    onProgress,
-  });
-}
-
-export async function extractFromSelection(quizConfig = {}, onProgress = null) {
-  if (onProgress) {
-    onProgress({ status: 'extracting-selection', message: 'Getting selected text...' });
-  }
-
-  const { text, title, url } = await extractionService.getSelectionText();
-
-  return finalizeSource({
-    sourceType: SOURCE_TYPE.SELECTION,
-    title: title || 'Selection',
-    url,
-    rawText: text,
-    quizConfig,
-    onProgress,
-  });
-}
-
-export async function extractFromPDFResult(
-  { text, fileName, pageCount = 0 },
-  quizConfig = {},
-  onProgress = null
-) {
+export async function extractFromPDFResult({ text, fileName, pageCount = 0 }, quizConfig = {}, onProgress = null) {
   if (onProgress) {
     onProgress({ status: 'processing-pdf', message: `Processing PDF: ${fileName}` });
   }
@@ -229,7 +173,7 @@ export async function extractFromPDFResult(
     rawText: text,
     meta: { pageCount, fileName },
     quizConfig,
-    onProgress,
+    onProgress
   });
 }
 
@@ -239,7 +183,7 @@ export function normalizeManualTopic(topic = '', context = '', quizConfig = {}, 
     onProgress({ status: 'processing-manual-topic', message: 'Processing custom topic...' });
   }
 
-  const text = cleanToPromptReady(context || topic);
+  const text = cleanSelectionText(context || topic);
   const chunks = chunkText(text);
 
   return {
@@ -256,9 +200,9 @@ export function normalizeManualTopic(topic = '', context = '', quizConfig = {}, 
         chunksCreated: chunks.length,
         originalWordCount: text.split(/\s+/).length,
         summarizationAttempted: false,
-        summarizationSucceeded: false,
-      },
-    },
+        summarizationSucceeded: false
+      }
+    }
   };
 }
 

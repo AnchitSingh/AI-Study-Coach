@@ -37,12 +37,7 @@ const App = () => {
     setHasInitialized(true);
   }, [hasInitialized]);
 
-  React.useEffect(() => {
-    // Signal to the background script that the side panel is ready
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-      chrome.runtime.sendMessage({ type: 'SIDEPANEL_READY' });
-    }
-  }, []);
+
 
   const navigateTo = (page, data = null) => {
     if (currentPage === 'landing' && page === 'home') {
@@ -62,23 +57,7 @@ const App = () => {
     setCurrentPage(page);
   };
 
-  React.useEffect(() => {
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-      const messageListener = (message, sender, sendResponse) => {
-        if (message.type === 'START_QUIZ_FROM_SELECTION') {
-          navigateTo('home', { openQuizSetup: true, selectionText: message.text });
-        } else if (message.type === 'START_STORY_FROM_SELECTION') {
-          navigateTo('home', { openStorySetup: true, selectionText: message.text });
-        }
-      };
 
-      chrome.runtime.onMessage.addListener(messageListener);
-
-      return () => {
-        chrome.runtime.onMessage.removeListener(messageListener);
-      };
-    }
-  }, [navigateTo]);
 
   const resetApp = () => {
     localStorage.removeItem('aistudycoach_visited');

@@ -6,7 +6,6 @@ import StorySetupModal from '../components/story/StorySetupModal';
 import GlobalHeader from '../components/ui/GlobalHeader';
 import aiStudyCoachAPI from '../services/api';
 import {
-  extractFromCurrentPage,
   extractFromPDFResult,
   normalizeManualTopic,
 } from '../utils/contentExtractor';

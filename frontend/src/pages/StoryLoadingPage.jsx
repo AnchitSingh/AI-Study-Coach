@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import {
-  extractFromCurrentPage,
   extractFromPDFResult,
   normalizeManualTopic,
 } from '../utils/contentExtractor';
@@ -205,32 +204,6 @@ const StoryLoadingPage = ({ onNavigate, navigationData }) => {
         };
 
         switch (config.sourceType) {
-          case SOURCE_TYPE.PAGE:
-            // Check if the selected tab is a PDF
-            if (
-              config.selectedTab &&
-              config.selectedTab.url &&
-              config.selectedTab.url.toLowerCase().endsWith('.pdf')
-            ) {
-              try {
-                const { text, meta } = await extractTextFromPDF(config.selectedTab.url);
-                extractedSource = await extractFromPDFResult(
-                  {
-                    text,
-                    fileName: config.selectedTab.url.split('/').pop() || 'PDF Document',
-                    pageCount: meta.pageCount,
-                  },
-                  config,
-                  progressCallback
-                );
-              } catch (error) {
-                console.error('Failed to extract PDF from tab URL:', error);
-                extractedSource = await extractFromCurrentPage(config, progressCallback);
-              }
-            } else {
-              extractedSource = await extractFromCurrentPage(config, progressCallback);
-            }
-            break;
           case SOURCE_TYPE.PDF:
             if (config.pdfFile) {
               const { text, meta } = await extractTextFromPDF(config.pdfFile);
@@ -245,7 +218,6 @@ const StoryLoadingPage = ({ onNavigate, navigationData }) => {
               );
             }
             break;
-          case SOURCE_TYPE.SELECTION:
           case SOURCE_TYPE.MANUAL:
           default:
             extractedSource = normalizeManualTopic(
