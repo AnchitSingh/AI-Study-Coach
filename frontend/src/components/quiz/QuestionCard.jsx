@@ -1,3 +1,14 @@
+/**
+ * @fileoverview Question card component for displaying quiz questions and answers.
+ * 
+ * This component represents a single question in a quiz, displaying the question
+ * text, answer options, feedback, and navigation controls. It manages the state
+ * for answer selection, feedback display, and modal dialogs for pause/stop
+ * functionality.
+ * 
+ * @module QuestionCard
+ */
+
 import React, { useState } from 'react';
 import { Clock, Bookmark, Pause, Square } from 'lucide-react';
 import AnswerOption from './AnswerOption';
@@ -5,12 +16,64 @@ import FeedbackSection from './FeedbackSection';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 
+/**
+ * Question card component for displaying quiz questions and answers.
+ * 
+ * @param {Object} props - Component properties
+ * @param {string} props.question - The question text to display
+ * @param {Array} props.options - Array of answer options
+ * @param {Function} props.onAnswer - Callback for when an answer is selected
+ * @param {Function} props.onBookmark - Callback for bookmarking the question
+ * @param {Function} props.onPause - Callback for pausing the quiz
+ * @param {Function} props.onStop - Callback for stopping the quiz
+ * 
+ * @returns {JSX.Element} The rendered question card component
+ * 
+ * @example
+ * <QuestionCard
+ *   question="What is the powerhouse of the cell?"
+ *   options={[
+ *     { text: "Nucleus", isCorrect: false },
+ *     { text: "Mitochondria", isCorrect: true },
+ *     { text: "Ribosome", isCorrect: false },
+ *     { text: "Endoplasmic reticulum", isCorrect: false }
+ *   ]}
+ *   onAnswer={(id, correct) => console.log('Answered:', id, correct)}
+ *   onBookmark={() => console.log('Bookmarked')}
+ *   onPause={() => console.log('Paused')}
+ *   onStop={() => console.log('Stopped')}
+ * />
+ */
 const QuestionCard = ({ question, options, onAnswer, onBookmark, onPause, onStop }) => {
+  /**
+   * The currently selected answer
+   * @type {Object|null}
+   */
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  
+  /**
+   * Whether to show feedback for the selected answer
+   * @type {boolean}
+   */
   const [showFeedback, setShowFeedback] = useState(false);
+  
+  /**
+   * Whether the pause modal is visible
+   * @type {boolean}
+   */
   const [showPauseModal, setShowPauseModal] = useState(false);
+  
+  /**
+   * Whether the stop modal is visible
+   * @type {boolean}
+   */
   const [showStopModal, setShowStopModal] = useState(false);
 
+  /**
+   * Handle answer selection and update state
+   * @param {number} optionId - Index of the selected option
+   * @param {boolean} isCorrect - Whether the selected answer is correct
+   */
   const handleAnswerSelect = (optionId, isCorrect) => {
     setSelectedAnswer({ optionId, isCorrect });
     setShowFeedback(true);

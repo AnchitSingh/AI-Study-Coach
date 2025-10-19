@@ -1,6 +1,30 @@
+/**
+ * @fileoverview Gemini AI API client for interfacing with the backend.
+ * 
+ * This module provides a client interface for communicating with the
+ * Gemini AI backend API. It handles all HTTP requests for quiz generation,
+ * story creation, answer evaluation, and feedback generation.
+ * 
+ * The API client includes proper error handling, request/response processing,
+ * and follows RESTful conventions for consistent communication with the backend.
+ * 
+ * @module geminiAPI
+ */
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 /**
  * Checks the status of the backend API.
+ * 
+ * @returns {Promise<Object>} API status response with success flag and data
+ * 
+ * @example
+ * const status = await getApiStatus();
+ * if (status.success) {
+ *   console.log('API is available');
+ * } else {
+ *   console.error('API is unavailable:', status.error);
+ * }
  */
 export async function getApiStatus() {
   try {
@@ -18,8 +42,32 @@ export async function getApiStatus() {
 
 /**
  * Generates a quiz by calling the backend.
- * @param {object} config - The quiz configuration.
- * @returns {Promise<object>} The generated quiz data.
+ * 
+ * @param {Object} config - The quiz configuration
+ * @param {Object} config.extractedSource - Source material for quiz generation
+ * @param {Object} config.config - Quiz configuration parameters
+ * @returns {Promise<Object>} The generated quiz data
+ * 
+ * @throws {Error} If the request fails or returns an error response
+ * 
+ * @example
+ * const quizConfig = {
+ *   extractedSource: {
+ *     title: 'World History',
+ *     text: 'Content about world history...'
+ *   },
+ *   config: {
+ *     questionCount: 10,
+ *     difficulty: 'medium'
+ *   }
+ * };
+ * 
+ * try {
+ *   const quiz = await generateQuiz(quizConfig);
+ *   console.log('Quiz generated:', quiz);
+ * } catch (error) {
+ *   console.error('Failed to generate quiz:', error);
+ * }
  */
 export async function generateQuiz(config) {
   try {
@@ -44,9 +92,30 @@ export async function generateQuiz(config) {
 }
 
 /**
- * Generates a story by calling the backend and returns a stream.
- * @param {object} config - The story configuration.
- * @returns {Promise<ReadableStream>} The streaming response body.
+ * Evaluates a subjective answer by calling the backend.
+ * 
+ * @param {Object} data - The evaluation data
+ * @param {Object} data.question - The question being evaluated
+ * @param {string} data.userAnswer - The user's answer to evaluate
+ * @returns {Promise<Object>} The evaluation results
+ * 
+ * @throws {Error} If the request fails or returns an error response
+ * 
+ * @example
+ * const evaluationData = {
+ *   question: {
+ *     text: 'Explain photosynthesis',
+ *     type: 'Short Answer'
+ *   },
+ *   userAnswer: 'Photosynthesis is the process by which plants convert sunlight to energy.'
+ * };
+ * 
+ * try {
+ *   const evaluation = await evaluateSubjective(evaluationData);
+ *   console.log('Evaluation result:', evaluation);
+ * } catch (error) {
+ *   console.error('Failed to evaluate answer:', error);
+ * }
  */
 export async function evaluateSubjective(data) {
   try {
@@ -70,6 +139,29 @@ export async function evaluateSubjective(data) {
   }
 }
 
+/**
+ * Generates a story by calling the backend.
+ * 
+ * @param {Object} config - The story configuration
+ * @param {string} config.topic - The topic for the story
+ * @param {string} config.style - The storytelling style
+ * @returns {Promise<Object>} The generated story data
+ * 
+ * @throws {Error} If the request fails or returns an error response
+ * 
+ * @example
+ * const storyConfig = {
+ *   topic: 'The Water Cycle',
+ *   style: 'Simple Words'
+ * };
+ * 
+ * try {
+ *   const story = await getStory(storyConfig);
+ *   console.log('Story generated:', story);
+ * } catch (error) {
+ *   console.error('Failed to generate story:', error);
+ * }
+ */
 export async function getStory(config) {
   try {
     const response = await fetch(`${API_BASE_URL}/get-story`, {
@@ -92,6 +184,29 @@ export async function getStory(config) {
   }
 }
 
+/**
+ * Gets quiz feedback by calling the backend.
+ * 
+ * @param {Object} data - The feedback data
+ * @param {Object} data.quizMeta - Quiz metadata
+ * @param {Object} data.stats - Quiz statistics
+ * @returns {Promise<Object>} The feedback data
+ * 
+ * @throws {Error} If the request fails or returns an error response
+ * 
+ * @example
+ * const feedbackData = {
+ *   quizMeta: { title: 'Math Quiz', subject: 'Algebra' },
+ *   stats: { score: 8, total: 10 }
+ * };
+ * 
+ * try {
+ *   const feedback = await getQuizFeedback(feedbackData);
+ *   console.log('Quiz feedback:', feedback);
+ * } catch (error) {
+ *   console.error('Failed to get feedback:', error);
+ * }
+ */
 export async function getQuizFeedback(data) {
   try {
     const response = await fetch(`${API_BASE_URL}/get-feedback`, {

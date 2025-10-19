@@ -1,3 +1,18 @@
+/**
+ * @fileoverview API service for AI Study Coach application.
+ * 
+ * This service provides a complete API layer for the AI Study Coach application,
+ * handling quiz generation, story creation, answer evaluation, performance
+ * tracking, and data persistence. It integrates with the Gemini AI API for
+ * content generation and evaluation while maintaining local state in storage.
+ * 
+ * The service follows a singleton pattern and provides methods for all
+ * core application functionality including quiz lifecycle management,
+ * bookmarking, progress tracking, and statistical analysis.
+ * 
+ * @module aiStudyCoachAPI
+ */
+
 // src/api.js
 import geminiAPI from './geminiAPI';
 import { generateId } from '../utils/helpers';
@@ -7,6 +22,10 @@ import storage from '../utils/storage';
 // CONSTANTS
 // ============================================================================
 
+/**
+ * Storage keys for persisting data locally
+ * @type {Object}
+ */
 const STORAGE_KEYS = {
   ACTIVE_QUIZZES: 'activeQuizzes',
   QUIZ_PROGRESS: 'quizProgress',
@@ -18,6 +37,10 @@ const STORAGE_KEYS = {
   USER_PROFILE: 'userProfile',
 };
 
+/**
+ * Question type constants for standardization
+ * @type {Object}
+ */
 const QUESTION_TYPES = {
   MCQ: 'MCQ',
   TRUE_FALSE: 'True/False',
@@ -26,6 +49,10 @@ const QUESTION_TYPES = {
   SUBJECTIVE: 'Subjective',
 };
 
+/**
+ * Question type breakdown keys for statistics
+ * @type {Object}
+ */
 const QUESTION_TYPE_BREAKDOWN_KEYS = {
   MCQ: 'MCQ',
   TRUE_FALSE: 'TrueFalse',
@@ -33,11 +60,19 @@ const QUESTION_TYPE_BREAKDOWN_KEYS = {
   SUBJECTIVE: 'Subjective',
 };
 
+/**
+ * Thresholds for topic categorization
+ * @type {Object}
+ */
 const TOPIC_CATEGORIES = {
   STRONG: 0.7,
   MODERATE: 0.4,
 };
 
+/**
+ * Constants for performance tracking and analytics
+ * @type {Object}
+ */
 const MAX_HISTORY_LENGTH = 20;
 const RECENCY_DECAY_FACTOR = 0.02;
 const MIN_RECENCY_WEIGHT = 0.5;
@@ -47,6 +82,10 @@ const DIFFICULTY_WEIGHTS = {
   easy: 1.0,
 };
 
+/**
+ * Constants for trend analysis
+ * @type {Object}
+ */
 const TREND_THRESHOLD = 0.1;
 const TIME_RANGES = {
   SEVEN_DAYS: 7 * 24 * 60 * 60 * 1000,
@@ -58,7 +97,10 @@ const TIME_RANGES = {
 // ============================================================================
 
 /**
- * Creates a standardized success response
+ * Creates a standardized success response.
+ * 
+ * @param {*} data - The data to include in the response
+ * @returns {Object} Standardized success response object
  */
 const createSuccessResponse = (data) => ({
   success: true,
@@ -67,7 +109,10 @@ const createSuccessResponse = (data) => ({
 });
 
 /**
- * Creates a standardized error response
+ * Creates a standardized error response.
+ * 
+ * @param {Error|string} error - The error to include in the response
+ * @returns {Object} Standardized error response object
  */
 const createErrorResponse = (error) => ({
   success: false,

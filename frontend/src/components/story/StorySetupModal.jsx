@@ -1,3 +1,14 @@
+/**
+ * @fileoverview Story setup modal component for configuring story parameters.
+ * 
+ * This component provides a multi-step modal interface for users to configure
+ * their story settings, including source selection (manual or PDF), topic,
+ * and storytelling style. It includes validation and error handling to ensure
+ * proper configuration before generating the story.
+ * 
+ * @module StorySetupModal
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../ui/Modal';
@@ -5,7 +16,10 @@ import Button from '../ui/Button';
 
 import { SOURCE_TYPE } from '../../utils/messages';
 
-// Constants
+/**
+ * Available storytelling styles with their descriptions
+ * @type {Array<Object>}
+ */
 const storyStyles = [
   { value: 'Grandpa', label: 'Grandpa', icon: '👴', description: 'Warm storytelling style' },
   { value: 'Simple Words', label: 'Simple Words', icon: '📖', description: 'Easy to understand' },
@@ -13,6 +27,10 @@ const storyStyles = [
   { value: 'ELI5', label: 'ELI5', icon: '👶', description: "Explain like I'm 5" },
 ];
 
+/**
+ * Available source options for story content
+ * @type {Array<Object>}
+ */
 const sourceOptions = [
   {
     value: SOURCE_TYPE.MANUAL,
@@ -23,14 +41,64 @@ const sourceOptions = [
   { value: SOURCE_TYPE.PDF, label: 'From PDF', icon: '📎', description: 'Upload a PDF file' },
 ];
 
+/**
+ * Story setup modal component for configuring story parameters.
+ * 
+ * @param {Object} props - Component properties
+ * @param {boolean} props.isOpen - Whether the modal is currently visible
+ * @param {Function} props.onClose - Callback function when modal is closed
+ * @param {Function} props.onStartStory - Callback function when story is started with configuration
+ * 
+ * @returns {JSX.Element} The rendered story setup modal
+ * 
+ * @example
+ * <StorySetupModal
+ *   isOpen={showModal}
+ *   onClose={() => setShowModal(false)}
+ *   onStartStory={handleStartStory}
+ * />
+ */
 const StorySetupModal = ({ isOpen, onClose, onStartStory }) => {
+  /**
+   * Current step in the multi-step modal (1 or 2)
+   * @type {number}
+   */
   const [currentStep, setCurrentStep] = useState(1);
+  
+  /**
+   * Field-specific validation errors
+   * @type {Object}
+   */
   const [errors, setErrors] = useState({});
+  
+  /**
+   * Selected PDF file (if source is PDF)
+   * @type {File|null}
+   */
   const [pdfFile, setPdfFile] = useState(null);
+  
+  /**
+   * Reference to file input element
+   * @type {React.MutableRefObject<HTMLInputElement>}
+   */
   const fileInputRef = useRef(null);
+  
+  /**
+   * Reference to modal body for focus management
+   * @type {React.MutableRefObject<HTMLDivElement>}
+   */
   const modalBodyRef = useRef(null);
+  
+  /**
+   * Whether the story is being generated (loading state)
+   * @type {boolean}
+   */
   const [isGenerating, setIsGenerating] = useState(false);
 
+  /**
+   * Current story configuration state
+   * @type {Object}
+   */
   const [config, setConfig] = useState({
     sourceType: SOURCE_TYPE.MANUAL,
     sourceValue: '',
@@ -39,13 +107,18 @@ const StorySetupModal = ({ isOpen, onClose, onStartStory }) => {
     storyStyle: 'Simple Words',
   });
 
+  /**
+   * Manage focus when modal opens
+   */
   useEffect(() => {
     if (isOpen && modalBodyRef.current) {
       modalBodyRef.current.focus();
     }
   }, [isOpen]);
 
-  // Cleanup
+  /**
+   * Clean up file uploads when component unmounts
+   */
   useEffect(() => {
     return () => {
       setPdfFile(null);
@@ -55,6 +128,11 @@ const StorySetupModal = ({ isOpen, onClose, onStartStory }) => {
     };
   }, []);
 
+  /**
+   * Handle changes to configuration fields
+   * @param {string} field - Field name to update
+   * @param {*} value - New value for the field
+   */
   const handleInputChange = (field, value) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -62,6 +140,10 @@ const StorySetupModal = ({ isOpen, onClose, onStartStory }) => {
     }
   };
 
+  /**
+   * Handle source type selection
+   * @param {string} sourceType - New source type to set
+   */
   const handleSourceTypeChange = (sourceType) => {
     setConfig((prev) => ({
       ...prev,
@@ -75,6 +157,10 @@ const StorySetupModal = ({ isOpen, onClose, onStartStory }) => {
     setErrors({});
   };
 
+  /**
+   * Handle PDF file selection
+   * @param {React.ChangeEvent<HTMLInputElement>} e - File input change event
+   */
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
@@ -86,6 +172,11 @@ const StorySetupModal = ({ isOpen, onClose, onStartStory }) => {
     }
   };
 
+  /**
+   * Validate the current step before proceeding
+   * @param {number} step - Current step to validate
+   * @returns {boolean} Whether validation passed
+   */
   const validateStep = (step) => {
     const newErrors = {};
 
@@ -110,17 +201,26 @@ const StorySetupModal = ({ isOpen, onClose, onStartStory }) => {
     return true;
   };
 
+  /**
+   * Proceed to the next step
+   */
   const handleNext = () => {
     if (validateStep(currentStep)) {
       setCurrentStep(currentStep + 1);
     }
   };
 
+  /**
+   * Go back to the previous step
+   */
   const handleBack = () => {
     setCurrentStep(currentStep - 1);
     setErrors({});
   };
 
+  /**
+   * Generate the story with the configured parameters
+   */
   const handleGenerateStory = async () => {
     if (!validateStep(2)) return;
 
@@ -153,6 +253,10 @@ const StorySetupModal = ({ isOpen, onClose, onStartStory }) => {
     }
   };
 
+  /**
+   * Render source-specific input fields based on selected source type
+   * @returns {JSX.Element|null} Source-specific input component or null
+   */
   const renderSourceSpecificInput = () => {
     switch (config.sourceType) {
       case SOURCE_TYPE.PDF:
@@ -211,6 +315,10 @@ const StorySetupModal = ({ isOpen, onClose, onStartStory }) => {
     }
   };
 
+  /**
+   * Render the first step of the setup modal
+   * @returns {JSX.Element} Step 1 content
+   */
   const renderStep1 = () => (
     <div className="space-y-6">
       {/* Source Selection */}
@@ -299,6 +407,10 @@ const StorySetupModal = ({ isOpen, onClose, onStartStory }) => {
     </div>
   );
 
+  /**
+   * Render the second step of the setup modal
+   * @returns {JSX.Element} Step 2 content
+   */
   const renderStep2 = () => (
     <div className="space-y-6">
       <div>

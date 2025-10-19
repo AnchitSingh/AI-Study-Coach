@@ -1,12 +1,63 @@
+/**
+ * @fileoverview Custom accessible dropdown component with keyboard navigation.
+ * 
+ * This component provides an accessible dropdown menu with keyboard navigation
+ * support, highlighting, and smooth animations. It includes proper ARIA attributes
+ * and handles click-outside functionality for better user experience.
+ * 
+ * @module CustomDropdown
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 
+/**
+ * Custom accessible dropdown component with keyboard navigation.
+ * 
+ * @param {Object} props - Component properties
+ * @param {string} [props.label] - Optional label for the dropdown
+ * @param {string[]} props.options - Array of option values
+ * @param {string} props.value - Currently selected value
+ * @param {Function} props.onChange - Callback for value change
+ * 
+ * @returns {JSX.Element} The rendered dropdown component
+ * 
+ * @example
+ * <CustomDropdown 
+ *   label="Select difficulty" 
+ *   options={['Easy', 'Medium', 'Hard']} 
+ *   value="Medium" 
+ *   onChange={(val) => console.log(val)} 
+ * />
+ */
 const CustomDropdown = ({ label, options, value, onChange }) => {
+  /**
+   * Whether the dropdown is currently open
+   * @type {boolean}
+   */
   const [isOpen, setIsOpen] = useState(false);
+  
+  /**
+   * Index of the currently highlighted option
+   * @type {number}
+   */
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  
+  /**
+   * Reference to the dropdown container element
+   * @type {React.RefObject}
+   */
   const dropdownRef = useRef(null);
+  
+  /**
+   * Reference to the dropdown list element
+   * @type {React.RefObject}
+   */
   const listRef = useRef(null);
 
   // Handle clicking outside the dropdown to close it
+  /**
+   * Close dropdown when clicking outside
+   */
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -19,7 +70,9 @@ const CustomDropdown = ({ label, options, value, onChange }) => {
     };
   }, []);
 
-  // Reset highlighted index when dropdown opens
+  /**
+   * Reset highlighted index when dropdown opens
+   */
   useEffect(() => {
     if (isOpen) {
       const currentIndex = options.indexOf(value);
@@ -29,7 +82,9 @@ const CustomDropdown = ({ label, options, value, onChange }) => {
     }
   }, [isOpen, value, options]);
 
-  // Scroll highlighted item into view
+  /**
+   * Scroll highlighted item into view
+   */
   useEffect(() => {
     if (highlightedIndex >= 0 && listRef.current) {
       const highlightedElement = listRef.current.children[highlightedIndex];
@@ -42,7 +97,10 @@ const CustomDropdown = ({ label, options, value, onChange }) => {
     }
   }, [highlightedIndex]);
 
-  // Keyboard navigation
+  /**
+   * Handle keyboard navigation for the dropdown
+   * @param {KeyboardEvent} e - Keyboard event
+   */
   const handleKeyDown = (e) => {
     if (!isOpen) {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
@@ -85,11 +143,18 @@ const CustomDropdown = ({ label, options, value, onChange }) => {
     }
   };
 
+  /**
+   * Handle option selection
+   * @param {*} optionValue - The selected option value
+   */
   const handleOptionClick = (optionValue) => {
     onChange(optionValue);
     setIsOpen(false);
   };
 
+  /**
+   * Toggle dropdown open/close state
+   */
   const toggleDropdown = () => setIsOpen(!isOpen);
 
   return (

@@ -1,5 +1,33 @@
+/**
+ * @fileoverview Progress bar component for displaying completion percentages.
+ * 
+ * This component provides a visual representation of progress with customizable
+ * colors, labels, and percentage display. It includes smooth transitions and
+ * responsive design for different screen sizes.
+ * 
+ * @module ProgressBar
+ */
+
 import React from 'react';
 
+/**
+ * Progress bar component for displaying completion percentages.
+ * 
+ * @param {Object} props - Component properties
+ * @param {number} props.progress - Progress percentage (0-100)
+ * @param {boolean} [props.showPercentage=true] - Whether to display percentage text
+ * @param {string} [props.label] - Optional label text
+ * @param {string} [props.className=''] - Additional CSS classes
+ * @param {'amber'|'green'|'blue'|'purple'} [props.color='amber'] - Progress bar color scheme
+ * 
+ * @returns {JSX.Element} The rendered progress bar component
+ * 
+ * @example
+ * <ProgressBar progress={75} label="Quiz Progress" color="green" />
+ * 
+ * @example
+ * <ProgressBar progress={30} showPercentage={false} />
+ */
 const ProgressBar = ({
   progress,
   showPercentage = true,
@@ -7,6 +35,10 @@ const ProgressBar = ({
   className = '',
   color = 'amber',
 }) => {
+  /**
+   * CSS classes for different progress bar colors
+   * @type {Object}
+   */
   const colorClasses = {
     amber: 'bg-gradient-to-r from-amber-500 to-orange-500',
     green: 'bg-gradient-to-r from-green-500 to-emerald-500',

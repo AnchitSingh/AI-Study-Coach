@@ -1,7 +1,29 @@
+/**
+ * @fileoverview Header component for quiz pages with responsive controls.
+ * 
+ * This component provides the header for quiz pages with controls for bookmarking,
+ * pausing, stopping, and displaying the timer and question progress. It supports
+ * responsive layouts for mobile, tablet, and desktop views, with different UI
+ * patterns optimized for each screen size.
+ * 
+ * @module QuizHeader
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import Button from '../ui/Button';
 
-// Expanding Quiz Button Component
+/**
+ * Expanding button component for quiz controls.
+ * 
+ * @param {Object} props - Component properties
+ * @param {React.ReactNode} props.icon - Icon element to display
+ * @param {string} props.label - Text label to display when expanded
+ * @param {Function} props.onClick - Click handler function
+ * @param {'secondary'|'danger'|'bookmark'} [props.variant='secondary'] - Button variant
+ * @param {boolean} [props.isBookmarked=false] - Whether the item is bookmarked (for bookmark variant)
+ * 
+ * @returns {JSX.Element} The expanding button component
+ */
 const ExpandingQuizButton = ({
   icon,
   label,
@@ -9,14 +31,34 @@ const ExpandingQuizButton = ({
   variant = 'secondary',
   isBookmarked = false,
 }) => {
+  /**
+   * Whether the button is currently expanded
+   * @type {boolean}
+   */
   const [isHovered, setIsHovered] = useState(false);
+  
+  /**
+   * Whether the device supports touch input
+   * @type {boolean}
+   */
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  
+  /**
+   * Timeout reference for delayed hover state changes
+   * @type {React.MutableRefObject<number|null>}
+   */
   const leaveTimeoutRef = useRef(null);
 
+  /**
+   * Detect touch device capability
+   */
   useEffect(() => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
   }, []);
 
+  /**
+   * Cleanup timeout on unmount
+   */
   useEffect(() => {
     return () => {
       if (leaveTimeoutRef.current) {
@@ -25,6 +67,9 @@ const ExpandingQuizButton = ({
     };
   }, []);
 
+  /**
+   * Handle mouse enter event to expand the button
+   */
   const handleMouseEnter = () => {
     if (!isTouchDevice) {
       if (leaveTimeoutRef.current) {
@@ -35,6 +80,9 @@ const ExpandingQuizButton = ({
     }
   };
 
+  /**
+   * Handle mouse leave event to collapse the button after delay
+   */
   const handleMouseLeave = () => {
     if (!isTouchDevice) {
       leaveTimeoutRef.current = setTimeout(() => {
@@ -43,11 +91,18 @@ const ExpandingQuizButton = ({
     }
   };
 
+  /**
+   * Handle touch start event to toggle expansion
+   * @param {TouchEvent} e - Touch event
+   */
   const handleTouchStart = (e) => {
     e.preventDefault();
     setIsHovered(!isHovered);
   };
 
+  /**
+   * Handle click event to execute action and manage mobile expansion
+   */
   const handleClick = () => {
     onClick();
     if (isTouchDevice) {
@@ -55,7 +110,10 @@ const ExpandingQuizButton = ({
     }
   };
 
-  // Variant styles
+  /**
+   * Get CSS classes for different button variants
+   * @returns {string} CSS classes for the button
+   */
   const getVariantStyles = () => {
     if (variant === 'bookmark') {
       return isBookmarked
@@ -116,6 +174,33 @@ const ExpandingQuizButton = ({
   );
 };
 
+/**
+ * Header component for quiz pages with responsive controls.
+ * 
+ * @param {Object} props - Component properties
+ * @param {string} [props.title='Quiz'] - Title to display in the header
+ * @param {number} props.currentQuestion - Current question number
+ * @param {number} props.totalQuestions - Total number of questions
+ * @param {number} props.timeLeft - Time remaining in seconds
+ * @param {Function} props.onPause - Callback for pause button
+ * @param {Function} props.onStop - Callback for stop button
+ * @param {Function} props.onBookmark - Callback for bookmark button
+ * @param {boolean} [props.isBookmarked=false] - Whether the current question is bookmarked
+ * 
+ * @returns {JSX.Element} The rendered quiz header component
+ * 
+ * @example
+ * <QuizHeader
+ *   title="Biology Quiz"
+ *   currentQuestion={5}
+ *   totalQuestions={10}
+ *   timeLeft={300}
+ *   onPause={handlePause}
+ *   onStop={handleStop}
+ *   onBookmark={handleBookmark}
+ *   isBookmarked={false}
+ * />
+ */
 const QuizHeader = ({
   title = 'Quiz',
   currentQuestion,
@@ -126,12 +211,21 @@ const QuizHeader = ({
   onBookmark,
   isBookmarked = false,
 }) => {
+  /**
+   * Format seconds to MM:SS format
+   * @param {number} seconds - Time in seconds to format
+   * @returns {string} Formatted time string in MM:SS format
+   */
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  /**
+   * Whether the time is running low (less than 30 seconds)
+   * @type {boolean}
+   */
   const isTimeWarning = timeLeft <= 30;
 
   // Icons

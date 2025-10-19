@@ -1,11 +1,51 @@
+/**
+ * @fileoverview Custom hook for managing quiz state and logic.
+ * 
+ * This hook provides comprehensive state management for quiz functionality,
+ * including question navigation, answer tracking, timer management, bookmarking,
+ * and communication with the backend API. It handles both new quiz generation
+ * and loading of existing/paused quizzes.
+ * 
+ * The hook manages the complete lifecycle of a quiz session, from initialization
+ * to submission, with support for different question types including MCQ,
+ * True/False, Short Answer, and Fill in the Blank questions.
+ * 
+ * @module useQuizState
+ */
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import aiStudyCoachAPI from '../services/api';
 import { normalizeQuizData, validateNormalizedQuiz } from '../utils/dataNormalizer';
 import { validateQuiz } from '../utils/schema';
 
+/**
+ * Custom hook for managing quiz state and logic.
+ * 
+ * @param {Object} [quizConfig=null] - Configuration for the quiz (questions, topic, etc.)
+ * @param {React.RefObject} [answerRef] - Reference to answer input component
+ * @returns {Object} Quiz state and actions
+ * 
+ * @example
+ * const { 
+ *   quiz, 
+ *   currentQuestion, 
+ *   selectAnswer, 
+ *   nextQuestion,
+ *   timeRemaining 
+ * } = useQuizState(quizConfig, answerRef);
+ */
 const useQuizState = (quizConfig = null, answerRef) => {
+  /**
+   * Current quiz data
+   * @type {Object|null}
+   */
   const [quiz, setQuiz] = useState(null);
+  
+  /**
+   * Quiz configuration settings
+   * @type {Object}
+   */
   const [config, setConfig] = useState(
     quizConfig || {
       immediateFeedback: true,
@@ -15,44 +55,157 @@ const useQuizState = (quizConfig = null, answerRef) => {
     }
   );
 
+  /**
+   * Index of the current question
+   * @type {number}
+   */
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  
+  /**
+   * User's answers for each question
+   * @type {Array}
+   */
   const [userAnswers, setUserAnswers] = useState([]);
+  
+  /**
+   * Remaining time in seconds
+   * @type {number}
+   */
   const [timeRemaining, setTimeRemaining] = useState(
     quizConfig?.timerEnabled ? quizConfig.totalTimer || 600 : 0
   );
+  
+  /**
+   * Whether the quiz is currently active
+   * @type {boolean}
+   */
   const [isQuizActive, setIsQuizActive] = useState(false);
+  
+  /**
+   * Whether the quiz is currently paused
+   * @type {boolean}
+   */
   const [isPaused, setIsPaused] = useState(false);
+  
+  /**
+   * Whether the quiz is currently loading
+   * @type {boolean}
+   */
   const [isLoading, setIsLoading] = useState(true);
+  
+  /**
+   * Error message if any occurred
+   * @type {string|null}
+   */
   const [error, setError] = useState(null);
+  
+  /**
+   * Set of bookmarked question IDs
+   * @type {Set<string>}
+   */
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState(new Set());
+  
+  /**
+   * Whether to show feedback for the current answer
+   * @type {boolean}
+   */
   const [showFeedback, setShowFeedback] = useState(false);
+  
+  /**
+   * Currently selected answer
+   * @type {Object|null}
+   */
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  
+  /**
+   * Draft answers that haven't been submitted yet
+   * @type {Object}
+   */
   const [draftAnswers, setDraftAnswers] = useState({});
+  
+  /**
+   * Whether the quiz is currently submitting
+   * @type {boolean}
+   */
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  /**
+   * Whether answers are being evaluated by AI
+   * @type {boolean}
+   */
   const [isEvaluating, setIsEvaluating] = useState(false);
+  
+  /**
+   * Progress of AI evaluation
+   * @type {Object}
+   */
   const [evaluationProgress, setEvaluationProgress] = useState({ current: 0, total: 0 });
 
+  /**
+   * Timer reference for countdown
+   * @type {React.MutableRefObject<number>}
+   */
   const timerRef = useRef(null);
+  
+  /**
+   * Reference to the current quiz ID
+   * @type {React.MutableRefObject<string>}
+   */
   const quizIdRef = useRef(null);
+  
+  /**
+   * Abort controller for API requests
+   * @type {React.MutableRefObject<AbortController>}
+   */
   const abortControllerRef = useRef(null);
+  
+  /**
+   * Reference to current question index to avoid closure issues
+   * @type {React.MutableRefObject<number>}
+   */
   const currentQuestionIndexRef = useRef(0);
+  
+  /**
+   * Timeout reference for auto-saving
+   * @type {React.MutableRefObject<number>}
+   */
   const autoSaveTimerRef = useRef(null);
+  
+  /**
+   * Reference to track if component is mounted
+   * @type {React.MutableRefObject<boolean>}
+   */
   const isMountedRef = useRef(true);
+  
+  /**
+   * Reference to user answers to avoid closure issues
+   * @type {React.MutableRefObject<Array>}
+   */
   const userAnswersRef = useRef([]);
 
-  // Keep refs in sync
+  /**
+   * Keep refs in sync
+   */
   useEffect(() => {
     currentQuestionIndexRef.current = currentQuestionIndex;
   }, [currentQuestionIndex]);
 
+  /**
+   * Keep answers ref in sync
+   */
   useEffect(() => {
     userAnswersRef.current = userAnswers;
   }, [userAnswers]);
 
-  // Load bookmarks on initial load
+  /**
+   * Load bookmarks on initial load
+   */
   useEffect(() => {
     let isMounted = true;
 
+    /**
+     * Load bookmarked questions from API
+     */
     const loadBookmarks = async () => {
       try {
         const response = await aiStudyCoachAPI.getBookmarks();
@@ -73,7 +226,9 @@ const useQuizState = (quizConfig = null, answerRef) => {
     };
   }, []);
 
-  // Initialize quiz when config changes
+  /**
+   * Initialize quiz when config changes
+   */
   useEffect(() => {
     if (!quizConfig || quiz) return;
 
@@ -128,7 +283,9 @@ const useQuizState = (quizConfig = null, answerRef) => {
     }
   }, [quizConfig, quiz]);
 
-  // Handle existing answers when question changes
+  /**
+   * Handle existing answers when question changes
+   */
   useEffect(() => {
     const timer = setTimeout(() => {
       const existingAnswer = userAnswers[currentQuestionIndex];
@@ -158,7 +315,10 @@ const useQuizState = (quizConfig = null, answerRef) => {
 
     return () => clearTimeout(timer);
   }, [currentQuestionIndex, userAnswers, config.immediateFeedback, quiz]);
-  // Cleanup on unmount
+  
+  /**
+   * Cleanup on unmount
+   */
   useEffect(() => {
     isMountedRef.current = true;
 
@@ -170,6 +330,11 @@ const useQuizState = (quizConfig = null, answerRef) => {
     };
   }, []);
 
+  /**
+   * Initialize a new quiz based on configuration
+   * @param {Object} config - Quiz configuration object
+   * @returns {Promise<void>}
+   */
   const initializeQuiz = async (config) => {
     // Validate config
     if (!config || (!config.questions && !config.topic)) {
@@ -239,6 +404,11 @@ const useQuizState = (quizConfig = null, answerRef) => {
     }
   };
 
+  /**
+   * Load an existing quiz by ID
+   * @param {string} quizId - ID of the quiz to load
+   * @returns {Promise<void>}
+   */
   const loadExistingQuiz = async (quizId) => {
     if (!quizId) {
       setError('No quiz ID provided');
@@ -316,6 +486,11 @@ const useQuizState = (quizConfig = null, answerRef) => {
     }
   };
 
+  /**
+   * Stop the quiz and submit answers
+   * @param {Array|null} [finalAnswers=null] - Final answers to submit
+   * @returns {Promise<Object|null>} Quiz results or null if failed
+   */
   const stopQuiz = useCallback(
     async (finalAnswers = null) => {
       console.log('DEBUG: stopQuiz function called with finalAnswers:', finalAnswers);
@@ -445,7 +620,9 @@ const useQuizState = (quizConfig = null, answerRef) => {
     [quiz, config, isSubmitting]
   );
 
-  // Timer with auto-submission
+  /**
+   * Timer with auto-submission
+   */
   useEffect(() => {
     if (!isQuizActive || !config.timerEnabled || isPaused) {
       if (timerRef.current) {
@@ -533,10 +710,28 @@ const useQuizState = (quizConfig = null, answerRef) => {
     };
   }, [isQuizActive, config.timerEnabled, isPaused, quiz, stopQuiz]);
 
+  /**
+   * Current question object
+   * @type {Object|null}
+   */
   const currentQuestion = quiz?.questions?.[currentQuestionIndex] || null;
+  
+  /**
+   * Whether this is the last question
+   * @type {boolean}
+   */
   const isLastQuestion = currentQuestionIndex === quiz?.questions?.length - 1 || false;
+  
+  /**
+   * Current question number (1-indexed)
+   * @type {number}
+   */
   const currentQuestionNumber = currentQuestionIndex + 1;
 
+  /**
+   * Save the current draft answer to state
+   * @returns {void}
+   */
   const saveDraftAnswer = useCallback(() => {
     if (!answerRef?.current || !quiz?.questions) return;
 
@@ -571,6 +766,15 @@ const useQuizState = (quizConfig = null, answerRef) => {
     }
   }, [quiz]);
 
+  /**
+   * Select an answer for the current question
+   * @param {number} optionIndex - Index of the selected option
+   * @param {boolean} isCorrect - Whether the answer is correct
+   * @param {boolean} [autoSelected=false] - Whether the answer was auto-selected
+   * @param {string|Array|null} [textAnswer=null] - Text answer for subjective/blank questions
+   * @param {boolean} [isDraft=false] - Whether this is a draft answer
+   * @returns {Promise<void>}
+   */
   const selectAnswer = useCallback(
     async (optionIndex, isCorrect, autoSelected = false, textAnswer = null, isDraft = false) => {
       try {
@@ -655,6 +859,10 @@ const useQuizState = (quizConfig = null, answerRef) => {
     [quiz, config, timeRemaining, draftAnswers]
   );
 
+  /**
+   * Save the current answer to state
+   * @returns {void}
+   */
   const saveCurrentAnswer = useCallback(() => {
     if (!answerRef?.current || !quiz?.questions) return;
 
@@ -680,6 +888,10 @@ const useQuizState = (quizConfig = null, answerRef) => {
     }
   }, [quiz, currentQuestionIndex, selectAnswer, userAnswers]);
 
+  /**
+   * Navigate to the next question
+   * @returns {void}
+   */
   const nextQuestion = useCallback(() => {
     if (!isLastQuestion && quiz?.questions) {
       saveCurrentAnswer();
@@ -697,6 +909,10 @@ const useQuizState = (quizConfig = null, answerRef) => {
     }
   }, [isLastQuestion, saveCurrentAnswer, config.immediateFeedback, quiz]);
 
+  /**
+   * Navigate to the previous question
+   * @returns {void}
+   */
   const previousQuestion = useCallback(() => {
     if (currentQuestionIndex > 0) {
       saveCurrentAnswer();
@@ -714,6 +930,11 @@ const useQuizState = (quizConfig = null, answerRef) => {
     }
   }, [currentQuestionIndex, saveCurrentAnswer, config.immediateFeedback]);
 
+  /**
+   * Navigate to a specific question by index
+   * @param {number} questionIndex - Index of the question to navigate to
+   * @returns {void}
+   */
   const goToQuestion = useCallback(
     (questionIndex) => {
       if (!quiz?.questions) return;
@@ -738,6 +959,10 @@ const useQuizState = (quizConfig = null, answerRef) => {
     [quiz, currentQuestionIndex, saveCurrentAnswer]
   );
 
+  /**
+   * Toggle bookmark status for the current question
+   * @returns {Promise<void>}
+   */
   const toggleBookmark = async () => {
     if (!currentQuestion) return;
 
@@ -789,6 +1014,10 @@ const useQuizState = (quizConfig = null, answerRef) => {
     }
   };
 
+  /**
+   * Pause the current quiz
+   * @returns {Promise<void>}
+   */
   const pauseQuiz = async () => {
     try {
       saveCurrentAnswer();
@@ -836,11 +1065,19 @@ const useQuizState = (quizConfig = null, answerRef) => {
     }
   };
 
+  /**
+   * Resume the paused quiz
+   * @returns {void}
+   */
   const resumeQuiz = () => {
     setIsPaused(false);
     setIsQuizActive(true);
   };
 
+  /**
+   * Toggle immediate feedback setting
+   * @returns {void}
+   */
   const toggleImmediateFeedback = () => {
     const newSetting = !config.immediateFeedback;
     setConfig((prev) => ({ ...prev, immediateFeedback: newSetting }));
@@ -854,6 +1091,10 @@ const useQuizState = (quizConfig = null, answerRef) => {
     }
   };
 
+  /**
+   * Get the current progress percentage
+   * @returns {number} Progress percentage (0-100)
+   */
   const getProgress = () => {
     if (!quiz?.questions) return 0;
     const answeredCount = userAnswers.filter(
@@ -862,6 +1103,10 @@ const useQuizState = (quizConfig = null, answerRef) => {
     return Math.min(100, (answeredCount / quiz.questions.length) * 100);
   };
 
+  /**
+   * Get the current draft answer
+   * @returns {Object|null} Current draft answer or null
+   */
   const getCurrentDraft = () => {
     return draftAnswers[currentQuestionIndex] || null;
   };

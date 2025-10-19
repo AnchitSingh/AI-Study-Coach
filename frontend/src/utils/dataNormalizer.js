@@ -1,12 +1,39 @@
 /**
- * Data Normalizer
- * Provides robust normalization and validation for quiz data
+ * @fileoverview Data normalizer for robust quiz data validation and transformation.
+ * 
+ * This module provides comprehensive data normalization and validation utilities
+ * for quiz data structures. It ensures data integrity by:
+ * 
+ * - Converting various data types to expected formats
+ * - Validating quiz and question structures
+ * - Sanitizing content to remove unsafe elements
+ * - Handling malformed data gracefully with fallback structures
+ * - Providing detailed error reporting for debugging
+ * 
+ * The normalizer is essential for processing data from diverse sources including
+ * AI models, APIs, and user inputs, ensuring consistent and safe data throughout
+ * the application.
+ * 
+ * @module dataNormalizer
  */
 
 import { sanitizeQuestion, validateQuestionStructure } from './questionValidator';
 
 /**
- * Normalizes various types to string safely
+ * Normalizes various types to string safely.
+ * 
+ * Handles conversion of different value types to clean strings,
+ * including nested objects with text/value properties, null/undefined
+ * values, and complex objects with JSON serialization fallback.
+ * 
+ * @param {*} value - Value to normalize to string
+ * @returns {string} Normalized string value
+ * 
+ * @example
+ * const str1 = normalizeString('  hello  '); // 'hello'
+ * const str2 = normalizeString({ text: 'world' }); // 'world'
+ * const str3 = normalizeString(null); // ''
+ * const str4 = normalizeString(42); // '42'
  */
 function normalizeString(value) {
   if (typeof value === 'string') {
@@ -29,7 +56,18 @@ function normalizeString(value) {
 }
 
 /**
- * Creates an empty/error quiz structure
+ * Creates an empty/error quiz structure.
+ * 
+ * Generates a fallback quiz structure when data normalization
+ * fails completely. Provides a user-friendly error state rather
+ * than crashing the application.
+ * 
+ * @param {string} [errorMessage='Invalid quiz data'] - Error message to include
+ * @returns {Object} Error quiz structure with safe defaults
+ * 
+ * @example
+ * const errorQuiz = createEmptyQuiz('Failed to load quiz data');
+ * console.log(errorQuiz.title); // 'Error Loading Quiz'
  */
 function createEmptyQuiz(errorMessage = 'Invalid quiz data') {
   return {
@@ -50,7 +88,19 @@ function createEmptyQuiz(errorMessage = 'Invalid quiz data') {
 }
 
 /**
- * Normalizes quiz configuration
+ * Normalizes quiz configuration.
+ * 
+ * Ensures quiz configuration has all required fields with proper
+ * data types and sensible defaults. Handles missing or malformed
+ * configuration objects gracefully.
+ * 
+ * @param {Object} config - Raw configuration object
+ * @returns {Object} Normalized configuration with defaults
+ * 
+ * @example
+ * const rawConfig = { immediateFeedback: false };
+ * const normalized = normalizeConfig(rawConfig);
+ * console.log(normalized.timerEnabled); // true (default)
  */
 function normalizeConfig(config) {
   if (!config || typeof config !== 'object') {
@@ -80,9 +130,21 @@ function normalizeConfig(config) {
 }
 
 /**
- * Main function to normalize quiz data
+ * Main function to normalize quiz data.
+ * 
+ * Performs comprehensive normalization of quiz data including:
+ * - Input validation and type checking
+ * - Deep cloning to prevent mutation of original data
+ * - Field normalization for basic properties
+ * - Configuration normalization with defaults
+ * - Question validation and sanitization
+ * - Error handling with fallback structures
+ * 
  * @param {Object} quizData - Raw quiz data from API or AI
  * @returns {Object} Normalized quiz data or error quiz
+ * 
+ * @example
+ * const rawData = {\n *   title: '  Math Quiz  ',\n *   questions: [\n *     {\n *       type: 'MCQ',\n *       question: 'What is 2+2?',\n *       options: [\n *         { text: '3', isCorrect: false },\n *         { text: '4', isCorrect: true }\n *       ]\n *     }\n *   ]\n * };\n * \n * const normalized = normalizeQuizData(rawData);\n * console.log(normalized.title); // 'Math Quiz' (trimmed)
  */
 export function normalizeQuizData(quizData) {
   // Validate input is an object
@@ -186,7 +248,19 @@ export function normalizeQuizData(quizData) {
 }
 
 /**
- * Validates that normalized quiz data is ready for use
+ * Validates that normalized quiz data is ready for use.
+ * 
+ * Performs final validation checks on normalized quiz data to
+ * ensure it meets all requirements for application use. Checks
+ * for error states, valid question arrays, and consistent counts.
+ * 
+ * @param {Object} quiz - Normalized quiz data to validate
+ * @returns {Object} Validation result with valid flag and error message
+ * @property {boolean} valid - Whether the quiz is valid
+ * @property {string} [error] - Error message if invalid
+ * 
+ * @example
+ * const quiz = normalizeQuizData(rawData);\n * const validation = validateNormalizedQuiz(quiz);\n * if (validation.valid) {\n *   console.log('Quiz is ready for use');\n * } else {\n *   console.error('Validation failed:', validation.error);\n * }
  */
 export function validateNormalizedQuiz(quiz) {
   if (!quiz || typeof quiz !== 'object') {
@@ -209,7 +283,18 @@ export function validateNormalizedQuiz(quiz) {
 }
 
 /**
- * Normalizes a single question (useful for dynamic updates)
+ * Normalizes a single question (useful for dynamic updates).
+ * 
+ * Applies normalization and validation to a single question,
+ * useful when dynamically adding or modifying questions. Includes
+ * validation warnings and error handling with null fallback.
+ * 
+ * @param {Object} question - Raw question data to normalize
+ * @param {number} [index=0] - Question index for logging context
+ * @returns {Object|null} Normalized question or null if invalid
+ * 
+ * @example
+ * const rawQuestion = {\n *   type: 'MCQ',\n *   question: 'What is 2+2?',\n *   options: [\n *     { text: '3', isCorrect: false },\n *     { text: '4', isCorrect: true }\n *   ]\n * };\n * \n * const normalized = normalizeSingleQuestion(rawQuestion, 0);\n * if (normalized) {\n *   console.log('Question is valid');\n * } else {\n *   console.error('Question is invalid');\n * }
  */
 export function normalizeSingleQuestion(question, index = 0) {
   try {

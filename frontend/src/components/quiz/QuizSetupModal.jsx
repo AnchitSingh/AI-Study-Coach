@@ -1,3 +1,15 @@
+/**
+ * @fileoverview Quiz setup modal component for configuring quiz parameters.
+ * 
+ * This component provides a multi-step modal interface for users to configure
+ * their quiz settings, including source selection (manual or PDF), topic,
+ * question count, difficulty, question types, and advanced settings like
+ * timers and feedback options. It includes validation and error handling
+ * to ensure proper configuration before starting the quiz.
+ * 
+ * @module QuizSetupModal
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Modal from '../ui/Modal';
@@ -5,7 +17,10 @@ import Button from '../ui/Button';
 
 import { SOURCE_TYPE } from '../../utils/messages';
 
-// Constants
+/**
+ * Available difficulty levels for quizzes
+ * @type {Array<Object>}
+ */
 const difficultyLevels = [
   { value: 'easy', label: 'Easy' },
   { value: 'medium', label: 'Medium' },
@@ -13,6 +28,10 @@ const difficultyLevels = [
   { value: 'mixed', label: 'Mixed' },
 ];
 
+/**
+ * Available question types with their icons
+ * @type {Array<Object>}
+ */
 const questionTypesData = [
   { value: 'MCQ', label: 'Multiple Choice', icon: '🔘' },
   { value: 'True/False', label: 'True/False', icon: '✓' },
@@ -20,8 +39,16 @@ const questionTypesData = [
   { value: 'Fill in Blank', label: 'Fill in Blank', icon: '📝' },
 ];
 
+/**
+ * Available question count options
+ * @type {Array<number>}
+ */
 const questionCounts = [3, 5, 10, 15, 20];
 
+/**
+ * Available source options for quiz content
+ * @type {Array<Object>}
+ */
 const sourceOptions = [
   {
     value: SOURCE_TYPE.MANUAL,
@@ -32,15 +59,72 @@ const sourceOptions = [
   { value: SOURCE_TYPE.PDF, label: 'From PDF', icon: '📎', description: 'Upload a PDF file' },
 ];
 
+/**
+ * Quiz setup modal component for configuring quiz parameters.
+ * 
+ * @param {Object} props - Component properties
+ * @param {boolean} props.isOpen - Whether the modal is currently visible
+ * @param {Function} props.onClose - Callback function when modal is closed
+ * @param {Function} props.onStartQuiz - Callback function when quiz is started with configuration
+ * @param {string} [props.recommendedTopic] - Recommended topic to pre-fill the form
+ * 
+ * @returns {JSX.Element} The rendered quiz setup modal
+ * 
+ * @example
+ * <QuizSetupModal
+ *   isOpen={showModal}
+ *   onClose={() => setShowModal(false)}
+ *   onStartQuiz={handleStartQuiz}
+ *   recommendedTopic="World War II"
+ * />
+ */
 const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
+  /**
+   * Current step in the multi-step modal (1 or 2)
+   * @type {number}
+   */
   const [currentStep, setCurrentStep] = useState(1);
+  
+  /**
+   * Whether advanced settings are expanded
+   * @type {boolean}
+   */
   const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  /**
+   * Field-specific validation errors
+   * @type {Object}
+   */
   const [errors, setErrors] = useState({});
+  
+  /**
+   * Selected PDF file (if source is PDF)
+   * @type {File|null}
+   */
   const [pdfFile, setPdfFile] = useState(null);
+  
+  /**
+   * Reference to file input element
+   * @type {React.MutableRefObject<HTMLInputElement>}
+   */
   const fileInputRef = useRef(null);
+  
+  /**
+   * Reference to modal body for focus management
+   * @type {React.MutableRefObject<HTMLDivElement>}
+   */
   const modalBodyRef = useRef(null);
+  
+  /**
+   * Whether the quiz is being started (loading state)
+   * @type {boolean}
+   */
   const [isStartingQuiz, setIsStartingQuiz] = useState(false);
 
+  /**
+   * Current quiz configuration state
+   * @type {Object}
+   */
   const [config, setConfig] = useState({
     sourceType: SOURCE_TYPE.MANUAL,
     sourceValue: '',
@@ -53,6 +137,9 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     totalTimer: 0,
   });
 
+  /**
+   * Pre-fill with recommended topic when modal opens
+   */
   useEffect(() => {
     // Pre-fill with recommended topic if provided
     if (isOpen && recommendedTopic) {
@@ -66,14 +153,18 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     }
   }, [isOpen, recommendedTopic]);
 
-  // Focus management
+  /**
+   * Manage focus when modal opens
+   */
   useEffect(() => {
     if (isOpen && modalBodyRef.current) {
       modalBodyRef.current.focus();
     }
   }, [isOpen]);
 
-  // Cleanup
+  /**
+   * Clean up file uploads when component unmounts
+   */
   useEffect(() => {
     return () => {
       setPdfFile(null);
@@ -83,6 +174,11 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     };
   }, []);
 
+  /**
+   * Handle changes to configuration fields
+   * @param {string} field - Field name to update
+   * @param {*} value - New value for the field
+   */
   const handleInputChange = (field, value) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
 
@@ -92,6 +188,10 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     }
   };
 
+  /**
+   * Handle source type selection
+   * @param {string} sourceType - New source type to set
+   */
   const handleSourceTypeChange = (sourceType) => {
     setConfig((prev) => ({
       ...prev,
@@ -106,6 +206,10 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     setErrors({});
   };
 
+  /**
+   * Handle PDF file selection
+   * @param {React.ChangeEvent<HTMLInputElement>} e - File input change event
+   */
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
@@ -117,6 +221,10 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     }
   };
 
+  /**
+   * Toggle question type selection
+   * @param {string} type - Question type to toggle
+   */
   const handleQuestionTypeToggle = (type) => {
     setConfig((prev) => {
       const types = prev.questionTypes.includes(type)
@@ -135,6 +243,11 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     }
   };
 
+  /**
+   * Validate the current step before proceeding
+   * @param {number} step - Current step to validate
+   * @returns {boolean} Whether validation passed
+   */
   const validateStep = (step) => {
     const newErrors = {};
 
@@ -166,17 +279,26 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Proceed to the next step
+   */
   const handleNext = () => {
     if (validateStep(currentStep)) {
       setCurrentStep(currentStep + 1);
     }
   };
 
+  /**
+   * Go back to the previous step
+   */
   const handleBack = () => {
     setCurrentStep(currentStep - 1);
     setErrors({});
   };
 
+  /**
+   * Start the quiz with the configured parameters
+   */
   const handleStartQuiz = async () => {
     if (!validateStep(2)) return;
 
@@ -215,6 +337,11 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     }
   };
 
+  /**
+   * Format seconds into a human-readable time string
+   * @param {number} seconds - Time in seconds to format
+   * @returns {string} Formatted time string
+   */
   const formatTime = (seconds) => {
     if (seconds === 0) return 'No timer';
     if (seconds < 60) return `${seconds} seconds`;
@@ -222,6 +349,10 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     return `${Math.floor(seconds / 3600)} hour${Math.floor(seconds / 3600) > 1 ? 's' : ''}`;
   };
 
+  /**
+   * Render source-specific input fields based on selected source type
+   * @returns {JSX.Element|null} Source-specific input component or null
+   */
   const renderSourceSpecificInput = () => {
     switch (config.sourceType) {
       case SOURCE_TYPE.PDF:
@@ -280,6 +411,10 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     }
   };
 
+  /**
+   * Render the first step of the setup modal
+   * @returns {JSX.Element} Step 1 content
+   */
   const renderStep1 = () => (
     <div className="space-y-6">
       {/* Source Selection */}
@@ -368,6 +503,10 @@ const QuizSetupModal = ({ isOpen, onClose, onStartQuiz, recommendedTopic }) => {
     </div>
   );
 
+  /**
+   * Render the second step of the setup modal
+   * @returns {JSX.Element} Step 2 content
+   */
   const renderStep2 = () => (
     <div className="space-y-6">
       {/* Basic Configuration */}

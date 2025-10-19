@@ -1,5 +1,41 @@
+/**
+ * @fileoverview Answer option component for quiz questions.
+ * 
+ * This component represents a single answer option in a quiz question, with
+ * visual feedback for selection, correctness, and disabled states. It handles
+ * different styling states such as selected, correct, incorrect, and disabled,
+ * providing clear visual cues to the user during quiz taking.
+ * 
+ * @module AnswerOption
+ */
+
 import React from 'react';
 
+/**
+ * Answer option component for quiz questions.
+ * 
+ * @param {Object} props - Component properties
+ * @param {Object} props.option - The answer option object with text and other properties
+ * @param {string} props.letter - The letter identifier for the option (A, B, C, D)
+ * @param {boolean} props.selected - Whether this option is currently selected
+ * @param {boolean} props.disabled - Whether the option is disabled (usually after answering)
+ * @param {Function} props.onSelect - Callback function when option is selected
+ * @param {boolean} [props.showResult=false] - Whether to show result styling (correct/incorrect)
+ * @param {boolean} [props.isCorrect=false] - Whether this option is the correct answer
+ * 
+ * @returns {JSX.Element} The rendered answer option component
+ * 
+ * @example
+ * <AnswerOption
+ *   option={{ text: "The correct answer" }}
+ *   letter="A"
+ *   selected={false}
+ *   disabled={false}
+ *   onSelect={() => console.log('Selected A')}
+ *   showResult={true}
+ *   isCorrect={true}
+ * />
+ */
 const AnswerOption = ({
   option,
   letter,
@@ -9,6 +45,10 @@ const AnswerOption = ({
   showResult = false,
   isCorrect = false,
 }) => {
+  /**
+   * Get the appropriate CSS classes for the button based on current state
+   * @returns {string} CSS classes for the button
+   */
   const getButtonStyles = () => {
     let baseStyles =
       'w-full text-left p-4 sm:p-6 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2';
@@ -36,6 +76,10 @@ const AnswerOption = ({
     return `${baseStyles} border-slate-200 hover:border-amber-300 hover:bg-amber-50/50`;
   };
 
+  /**
+   * Get the appropriate CSS classes for the letter circle based on current state
+   * @returns {string} CSS classes for the circle
+   */
   const getCircleStyles = () => {
     let baseStyles =
       'flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-colors';
@@ -59,6 +103,10 @@ const AnswerOption = ({
     return `${baseStyles} border-slate-300 group-hover:border-amber-400`;
   };
 
+  /**
+   * Get the appropriate CSS classes for the option text based on current state
+   * @returns {string} CSS classes for the text
+   */
   const getTextStyles = () => {
     let baseStyles = 'text-base sm:text-lg transition-colors';
 
@@ -79,6 +127,10 @@ const AnswerOption = ({
     return `${baseStyles} text-slate-700 group-hover:text-slate-800`;
   };
 
+  /**
+   * Get the appropriate CSS classes for the option letter based on current state
+   * @returns {string} CSS classes for the letter
+   */
   const getLetterStyles = () => {
     let baseStyles = 'font-semibold text-sm sm:text-base transition-colors';
 

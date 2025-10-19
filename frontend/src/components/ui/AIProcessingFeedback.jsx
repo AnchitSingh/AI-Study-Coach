@@ -1,14 +1,64 @@
+/**
+ * @fileoverview Animated feedback component for AI processing tasks.
+ * 
+ * This component provides visual feedback to users during AI processing tasks
+ * such as quiz generation, answer evaluation, or feedback processing. It
+ * displays animated messages, progress indicators, and engaging visual elements
+ * to keep users informed about the processing status.
+ * 
+ * @module AIProcessingFeedback
+ */
+
 import React, { useState, useEffect } from 'react';
 
+/**
+ * Animated feedback component for AI processing tasks.
+ * 
+ * @param {Object} props - Component properties
+ * @param {boolean} props.isVisible - Whether the feedback modal is visible
+ * @param {'quiz-generation'|'evaluation'|'feedback'|'processing'} [props.task='processing'] - Type of processing task
+ * @param {Object} [props.evaluationProgress={current: 0, total: 0}] - Progress for bulk evaluations
+ * @param {Function} [props.onComplete] - Function to call when processing is complete
+ * 
+ * @returns {JSX.Element|null} The rendered feedback component or null if not visible
+ * 
+ * @example
+ * <AIProcessingFeedback 
+ *   isVisible={true} 
+ *   task="quiz-generation" 
+ *   onComplete={() => console.log('Finished')} 
+ * />
+ * 
+ * @example
+ * <AIProcessingFeedback 
+ *   isVisible={true} 
+ *   task="evaluation" 
+ *   evaluationProgress={{ current: 2, total: 5 }}
+ *   onComplete={handleComplete}
+ * />
+ */
 const AIProcessingFeedback = ({
   isVisible,
   task = 'processing',
   evaluationProgress = { current: 0, total: 0 },
   onComplete,
 }) => {
+  /**
+   * Current message index in the rotation
+   * @type {number}
+   */
   const [currentMessage, setCurrentMessage] = useState(0);
+  
+  /**
+   * Dots animation string for visual feedback
+   * @type {string}
+   */
   const [dots, setDots] = useState('');
 
+  /**
+   * Message sets for different processing tasks
+   * @type {Object}
+   */
   const messages = {
     'quiz-generation': [
       '🧠 Analyzing your topic...',
@@ -35,10 +85,21 @@ const AIProcessingFeedback = ({
     ],
   };
 
+  /**
+   * Current messages array based on the task type
+   * @type {string[]}
+   */
   const currentMessages = messages[task] || messages.processing;
 
+  /**
+   * Whether we're in bulk evaluation mode
+   * @type {boolean}
+   */
   const isBulkEvaluating = task === 'evaluation' && evaluationProgress.total > 0;
 
+  /**
+   * Set up intervals and timeouts for animations
+   */
   useEffect(() => {
     if (!isVisible) return;
 
@@ -68,6 +129,9 @@ const AIProcessingFeedback = ({
     };
   }, [isVisible, isBulkEvaluating, currentMessages.length, onComplete]);
 
+  /**
+   * Reset message and dots when visibility changes
+   */
   useEffect(() => {
     if (isVisible) {
       setCurrentMessage(0);
@@ -77,6 +141,10 @@ const AIProcessingFeedback = ({
 
   if (!isVisible) return null;
 
+  /**
+   * Calculated progress percentage based on evaluation or message position
+   * @type {number}
+   */
   const progressPercentage = isBulkEvaluating
     ? (evaluationProgress.current / evaluationProgress.total) * 100
     : ((currentMessage + 1) / currentMessages.length) * 100;

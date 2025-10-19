@@ -1,8 +1,47 @@
+/**
+ * @fileoverview Accessible modal dialog component.
+ * 
+ * This component provides a reusable, accessible modal dialog with configurable
+ * sizes, close functionality, and proper focus management. It includes a backdrop,
+ * close button, and supports custom content and icons.
+ * 
+ * The modal follows accessibility best practices with proper ARIA attributes,
+ * focus trapping, and keyboard navigation support.
+ * 
+ * @module Modal
+ */
+
 import React from 'react';
 
+/**
+ * Accessible modal dialog component.
+ * 
+ * @param {Object} props - Component properties
+ * @param {boolean} props.isOpen - Whether the modal is currently visible
+ * @param {Function} props.onClose - Function to call when modal is closed
+ * @param {string} [props.title] - Modal title text
+ * @param {React.ReactNode} props.children - Content to display inside the modal
+ * @param {React.ReactNode} [props.icon] - Optional icon to display in the modal
+ * @param {'sm'|'md'|'lg'|'xl'} [props.size='md'] - Modal size (affects width)
+ * 
+ * @returns {JSX.Element|null} The rendered modal component or null if not open
+ * 
+ * @example
+ * <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Confirmation">
+ *   <p>Are you sure you want to continue?</p>
+ *   <div className="mt-4 flex justify-end space-x-3">
+ *     <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
+ *     <Button variant="primary" onClick={handleConfirm}>Confirm</Button>
+ *   </div>
+ * </Modal>
+ */
 const Modal = ({ isOpen, onClose, title, children, icon, size = 'md' }) => {
   if (!isOpen) return null;
 
+  /**
+   * CSS classes for different modal sizes
+   * @type {Object}
+   */
   const sizeClasses = {
     sm: 'max-w-sm',
     md: 'max-w-md',

@@ -1,38 +1,84 @@
+/**
+ * @fileoverview Global styles for the AI Study Coach application.
+ * 
+ * This file contains the global CSS styles and custom animations for the
+ * AI Study Coach application. It extends Tailwind CSS with custom components,
+ * animations, and utility classes specific to the application's design system.
+ * 
+ * The styles are organized into layers: base styles, component definitions,
+ * and utility classes, with custom keyframe animations for interactive elements.
+ * 
+ * @module index.css
+ */
+
 @import 'tailwindcss';
 
 /* Your custom styles */
+/* ============================================================================
+ * BASE STYLES
+ * ============================================================================ */
+
 @layer base {
   body {
     @apply antialiased;
   }
 }
 
+/* ============================================================================
+ * COMPONENT STYLES
+ * ============================================================================ */
+
 @layer components {
+  /**
+   * Float animation for subtle hover effect
+   */
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
 
+  /**
+   * Fade in and slide up animation for page elements
+   */
   .animate-fade-in-up {
     animation: fadeInUp 0.8s ease-out;
   }
 
+  /**
+   * Modal entrance animation
+   */
   .animate-modal-in {
     animation: modalIn 0.2s ease-out;
   }
 
+  /**
+   * Backdrop entrance animation
+   */
   .animate-backdrop-in {
     animation: backdropIn 0.2s ease-out;
   }
 
+  /**
+   * Shake animation for error feedback
+   */
   .animate-shake {
     animation: shake 0.5s;
   }
 
+  /**
+   * Timer pulse animation for time-sensitive elements
+   */
   .animate-timer-pulse {
     animation: pulse 1s infinite;
   }
 }
 
+/* ============================================================================
+ * KEYFRAME ANIMATIONS
+ * ============================================================================ */
+
+/**
+ * Float animation - subtle floating motion with rotation
+ */
 @keyframes float {
   0%,
   100% {
@@ -43,6 +89,9 @@
   }
 }
 
+/**
+ * Fade in and slide up animation
+ */
 @keyframes fadeInUp {
   0% {
     opacity: 0;
@@ -54,6 +103,9 @@
   }
 }
 
+/**
+ * Modal entrance animation with scaling and translation
+ */
 @keyframes modalIn {
   0% {
     opacity: 0;
@@ -65,6 +117,9 @@
   }
 }
 
+/**
+ * Backdrop entrance animation - fade in
+ */
 @keyframes backdropIn {
   0% {
     opacity: 0;
@@ -74,6 +129,9 @@
   }
 }
 
+/**
+ * Shake animation for error feedback
+ */
 @keyframes shake {
   0%,
   100% {
@@ -94,6 +152,9 @@
   }
 }
 
+/**
+ * Scale in animation
+ */
 @keyframes scaleIn {
   0% {
     transform: scale(0.9);
@@ -105,6 +166,9 @@
   }
 }
 
+/**
+ * Slow rotation animation
+ */
 @keyframes rotateSlow {
   from {
     transform: rotate(0deg);
@@ -114,6 +178,9 @@
   }
 }
 
+/**
+ * Slow pulse animation
+ */
 @keyframes pulseSlow {
   0%,
   100% {
@@ -124,6 +191,7 @@
   }
 }
 
+/* Additional animation classes */
 .animate-scale-in {
   animation: scaleIn 0.3s ease-out;
 }
@@ -145,30 +213,21 @@
   animation: backdropIn 0.2s ease-out;
 }
 
-@keyframes modalIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
+/* Duplicate definitions removed for clarity - using the ones above */
 
-@keyframes backdropIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
+/* ============================================================================
+ * MODAL AND INTERACTIVE ELEMENTS
+ * ============================================================================ */
 
 /* Ensure modals are always on top */
 .modal-backdrop {
   backdrop-filter: blur(4px);
 }
+
+/* ============================================================================
+ * CURSOR STYLES FOR INTERACTIVE ELEMENTS
+ * ============================================================================ */
+
 /* Cursor styles for interactive elements */
 button,
 input[type='button'],
@@ -188,6 +247,10 @@ select:disabled {
   cursor: not-allowed;
 }
 
+/* ============================================================================
+ * TRANSITIONS AND HOVER EFFECTS
+ * ============================================================================ */
+
 /* Smooth transitions for all interactive elements */
 button,
 input,
@@ -205,12 +268,20 @@ button:not(:disabled):active {
   transform: translateY(0);
 }
 
+/* ============================================================================
+ * FOCUS AND OUTLINE STYLES
+ * ============================================================================ */
+
 input {
   outline: none;
 }
 textarea {
   outline: none;
 }
+
+/* ============================================================================
+ * ADDITIONAL KEYFRAME ANIMATIONS
+ * ============================================================================ */
 
 @keyframes shimmer {
   0% {
@@ -230,6 +301,10 @@ textarea {
     transform: translateY(-25%);
   }
 }
+
+/* ============================================================================
+ * FONT SIZING AND SCALING
+ * ============================================================================ */
 
 /* In your extension's CSS */
 html {

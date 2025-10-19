@@ -1,7 +1,30 @@
+/**
+ * @fileoverview Global application header component with navigation and user profile.
+ * 
+ * This component provides the main header for the application with responsive navigation
+ * that works across different screen sizes. It includes profile management, mobile menu
+ * support, and consistent icon management across the application.
+ * 
+ * The header features expanding navigation items on medium screens, a profile modal,
+ * and accessibility features like keyboard navigation and ARIA labels.
+ * 
+ * @module GlobalHeader
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useProfile } from '../../contexts/ProfileContext';
 
-// Centralized icon management function for consistency
+/**
+ * Returns SVG icons based on the specified icon name.
+ * 
+ * @param {'home'|'bookmark'|'pause'|'stats'|'plus'|'menu'|'user'} iconName - The name of the icon to render
+ * @param {boolean} [isActive=false] - Whether the icon is in an active state (affects color)
+ * @returns {JSX.Element|null} The SVG icon component or null if icon name is not found
+ * 
+ * @example
+ * const homeIcon = getIcon('home', true);  // Active home icon
+ * const bookmarkIcon = getIcon('bookmark'); // Default inactive bookmark icon
+ */
 const getIcon = (iconName, isActive = false) => {
   const className = `w-5 h-5 transition-colors ${isActive ? 'text-amber-600' : 'text-slate-800'}`;
   const userIconClassName = `w-5 h-5 text-gray-600`;
@@ -177,18 +200,48 @@ const getIcon = (iconName, isActive = false) => {
   }
 };
 
-// Expanding Nav Item Component with Fixed Spacing and Hover Issues
+/**
+ * Expanding navigation item component that animates between icon-only and full text.
+ * 
+ * This component provides a responsive navigation item that expands to show text
+ * on hover for medium screens. It handles both mouse and touch interactions.
+ * 
+ * @param {Object} props - Component properties
+ * @param {Object} props.item - Navigation item configuration: { id, label, icon, action }
+ * @param {boolean} props.isActive - Whether this item is currently active
+ * @param {Function} props.onClick - Click handler for the navigation item
+ * 
+ * @returns {JSX.Element} The rendered navigation item
+ */
 const ExpandingNavItem = ({ item, isActive, onClick }) => {
+  /**
+   * Whether the item is currently expanded/hovered
+   * @type {boolean}
+   */
   const [isHovered, setIsHovered] = useState(false);
+  
+  /**
+   * Whether the device supports touch input
+   * @type {boolean}
+   */
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  
+  /**
+   * Timeout reference for delayed hover state changes
+   * @type {React.MutableRefObject<number|null>}
+   */
   const leaveTimeoutRef = useRef(null);
 
-  // Detect touch devices
+  /**
+   * Detect touch device capability on mount
+   */
   useEffect(() => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
   }, []);
 
-  // Cleanup timeout on unmount
+  /**
+   * Cleanup timeout on unmount
+   */
   useEffect(() => {
     return () => {
       if (leaveTimeoutRef.current) {
@@ -197,6 +250,9 @@ const ExpandingNavItem = ({ item, isActive, onClick }) => {
     };
   }, []);
 
+  /**
+   * Handle mouse enter event to expand the item
+   */
   const handleMouseEnter = () => {
     if (!isTouchDevice) {
       // Clear any pending leave timeout to prevent flickering
@@ -208,6 +264,9 @@ const ExpandingNavItem = ({ item, isActive, onClick }) => {
     }
   };
 
+  /**
+   * Handle mouse leave event to collapse the item after delay
+   */
   const handleMouseLeave = () => {
     if (!isTouchDevice) {
       // Add a delay before collapsing to handle edge cases
@@ -217,11 +276,18 @@ const ExpandingNavItem = ({ item, isActive, onClick }) => {
     }
   };
 
+  /**
+   * Handle touch start event to toggle expansion
+   * @param {TouchEvent} e - Touch event
+   */
   const handleTouchStart = (e) => {
     e.preventDefault();
     setIsHovered(!isHovered);
   };
 
+  /**
+   * Handle click event to navigate and manage mobile expansion
+   */
   const handleClick = () => {
     onClick();
     if (isTouchDevice) {
@@ -281,7 +347,15 @@ const ExpandingNavItem = ({ item, isActive, onClick }) => {
   );
 };
 
-// Tooltip Component (kept for potential future use)
+/**
+ * Tooltip component for displaying additional information on hover.
+ * 
+ * @param {Object} props - Component properties
+ * @param {React.ReactNode} props.children - Element to wrap with tooltip
+ * @param {string} props.content - Tooltip content text
+ * 
+ * @returns {JSX.Element} The element with tooltip functionality
+ */
 const Tooltip = ({ children, content }) => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -304,21 +378,61 @@ const Tooltip = ({ children, content }) => {
   );
 };
 
+/**
+ * Global header component with navigation and user profile management.
+ * 
+ * @param {Object} props - Component properties
+ * @param {string} [props.currentPage='home'] - Current active page identifier
+ * @param {Function} props.onNavigate - Navigation callback function
+ * @param {Function} [props.onProfileUpdate] - Callback for profile updates
+ * 
+ * @returns {JSX.Element} The rendered header component
+ * 
+ * @example
+ * <GlobalHeader 
+ *   currentPage="home" 
+ *   onNavigate={(page) => setCurrentPage(page)} 
+ *   onProfileUpdate={(name) => console.log('Updated name:', name)} 
+ * />
+ */
 const GlobalHeader = ({ currentPage = 'home', onNavigate, onProfileUpdate }) => {
+  /**
+   * Whether the mobile menu is currently visible
+   * @type {boolean}
+   */
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  
+  /**
+   * Whether the profile modal is currently visible
+   * @type {boolean}
+   */
   const [showProfileModal, setShowProfileModal] = useState(false);
 
+  /**
+   * User profile context containing user data and update functions
+   * @type {Object}
+   */
   const { profile, updateProfileName, loading } = useProfile();
+  
+  /**
+   * Local copy of profile name for editing
+   * @type {string}
+   */
   const [localProfileName, setLocalProfileName] = useState(profile?.name || 'Study Enthusiast');
 
-  // Update local state when profile changes
+  /**
+   * Update local state when profile changes
+   */
   useEffect(() => {
     if (profile?.name) {
       setLocalProfileName(profile.name);
     }
   }, [profile]);
 
-  // Navigation items configuration
+  /**
+   * Navigation items configuration with ID, label, icon, and action
+   * @type {Array<Object>}
+   */
   const navigationItems = [
     { id: 'home', label: 'Home', icon: 'home', action: () => onNavigate('home') },
     {
@@ -337,7 +451,10 @@ const GlobalHeader = ({ currentPage = 'home', onNavigate, onProfileUpdate }) => 
     },
   ];
 
-  // Handle profile name update
+  /**
+   * Handle form submission for profile name update
+   * @param {React.FormEvent} e - Form submission event
+   */
   const handleProfileNameSubmit = async (e) => {
     e.preventDefault();
     await updateProfileName(localProfileName);
@@ -347,7 +464,9 @@ const GlobalHeader = ({ currentPage = 'home', onNavigate, onProfileUpdate }) => 
     setShowProfileModal(false);
   };
 
-  // Close mobile menu on escape key
+  /**
+   * Close mobile menu when escape key is pressed
+   */
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape' && showMobileMenu) {
@@ -359,7 +478,9 @@ const GlobalHeader = ({ currentPage = 'home', onNavigate, onProfileUpdate }) => 
     return () => document.removeEventListener('keydown', handleEscape);
   }, [showMobileMenu]);
 
-  // Prevent body scroll when mobile menu is open
+  /**
+   * Prevent body scroll when mobile menu is open
+   */
   useEffect(() => {
     if (showMobileMenu) {
       document.body.style.overflow = 'hidden';

@@ -1,27 +1,113 @@
+/**
+ * @fileoverview Schema validation utilities for quiz data structures.
+ * 
+ * This module provides comprehensive validation functions for various
+ * data structures used throughout the AI Study Coach application.
+ * It ensures data integrity by validating quiz objects, AI evaluation
+ * responses, recommendations, and configuration objects against
+ * predefined schemas.
+ * 
+ * The validation functions perform deep inspection of object structures,
+ * checking for required fields, correct data types, and valid value ranges.
+ * They provide detailed error logging to aid in debugging data issues.
+ * 
+ * @module schema
+ */
+
 // src/utils/schema.js
+
+/**
+ * Check if value is a string.
+ * 
+ * @param {*} x - Value to check
+ * @returns {boolean} Whether value is a string
+ */
 function isString(x) {
   return typeof x === 'string';
 }
+
+/**
+ * Check if value is a boolean.
+ * 
+ * @param {*} x - Value to check
+ * @returns {boolean} Whether value is a boolean
+ */
 function isBool(x) {
   return typeof x === 'boolean';
 }
+
+/**
+ * Check if value is a finite number.
+ * 
+ * @param {*} x - Value to check
+ * @returns {boolean} Whether value is a finite number
+ */
 function isNum(x) {
   return typeof x === 'number' && Number.isFinite(x);
 }
+
+/**
+ * Check if value is an array.
+ * 
+ * @param {*} x - Value to check
+ * @returns {boolean} Whether value is an array
+ */
 function isArray(x) {
   return Array.isArray(x);
 }
+
+/**
+ * Check if value is a plain object (not array).
+ * 
+ * @param {*} x - Value to check
+ * @returns {boolean} Whether value is a plain object
+ */
 function isObject(x) {
   return x && typeof x === 'object' && !Array.isArray(x);
 }
+
+/**
+ * Check if value is a non-empty string.
+ * 
+ * @param {*} x - Value to check
+ * @returns {boolean} Whether value is a non-empty string
+ */
 function isNonEmptyString(x) {
   return typeof x === 'string' && x.trim().length > 0;
 }
 
 /**
- * Validates a quiz object structure
+ * Validates a quiz object structure.
+ * 
+ * Performs comprehensive validation of quiz objects including:
+ * - Overall object structure
+ * - Questions array validation
+ * - Individual question validation based on type
+ * - Option validation for MCQ and True/False questions
+ * - Field type checking for optional properties
+ * 
  * @param {Object} obj - Quiz object to validate
- * @returns {boolean} True if valid
+ * @returns {boolean} True if valid, false otherwise with detailed console errors
+ * 
+ * @example
+ * const quiz = {
+ *   questions: [
+ *     {
+ *       type: 'MCQ',
+ *       question: 'What is 2+2?',
+ *       options: [
+ *         { text: '3', isCorrect: false },
+ *         { text: '4', isCorrect: true }
+ *       ]
+ *     }
+ *   ]
+ * };
+ * 
+ * if (validateQuiz(quiz)) {
+ *   console.log('Quiz is valid');
+ * } else {
+ *   console.error('Quiz validation failed');
+ * }
  */
 export function validateQuiz(obj) {
   if (!isObject(obj)) {
@@ -153,8 +239,24 @@ export function validateQuiz(obj) {
 }
 
 /**
- * Validates an AI evaluation response
- * Matches what Gemini AI.evaluateSubjectiveJSON returns
+ * Validates an AI evaluation response.
+ * 
+ * Matches what Gemini AI.evaluateSubjectiveJSON returns.
+ * Validates the structure of AI-generated evaluation responses
+ * ensuring they contain required fields with correct types.
+ * 
+ * @param {Object} obj - Evaluation response object to validate
+ * @returns {boolean} True if valid, false otherwise with detailed console errors
+ * 
+ * @example
+ * const evaluation = {
+ *   isCorrect: true,
+ *   explanation: 'The answer correctly identifies the concept.'
+ * };
+ * 
+ * if (validateEvaluation(evaluation)) {
+ *   console.log('Evaluation is valid');
+ * }
  */
 export function validateEvaluation(obj) {
   if (!isObject(obj)) {
@@ -183,10 +285,26 @@ export function validateEvaluation(obj) {
 
   return true;
 }
+
 /**
- * Validates recommendations structure
+ * Validates recommendations structure.
+ * 
+ * Validates the structure of AI-generated learning recommendations
+ * ensuring they contain the required arrays with string elements.
+ * 
  * @param {Object} obj - Recommendations object to validate
- * @returns {boolean} True if valid
+ * @returns {boolean} True if valid, false otherwise with detailed console errors
+ * 
+ * @example
+ * const recommendations = {
+ *   strengths: ['Strong in mathematics', 'Good problem solving skills'],
+ *   weaknesses: ['Needs improvement in history'],
+ *   nextSteps: ['Review historical events', 'Practice timeline exercises']
+ * };
+ * 
+ * if (validateRecommendations(recommendations)) {
+ *   console.log('Recommendations are valid');
+ * }
  */
 export function validateRecommendations(obj) {
   if (!isObject(obj)) {
@@ -215,9 +333,26 @@ export function validateRecommendations(obj) {
 }
 
 /**
- * Validates quiz configuration
- * @param {Object} config - Configuration object
- * @returns {boolean} True if valid
+ * Validates quiz configuration.
+ * 
+ * Validates optional configuration fields ensuring they have
+ * correct data types when present. Does not enforce required fields
+ * as configuration is typically partially provided.
+ * 
+ * @param {Object} config - Configuration object to validate
+ * @returns {boolean} True if valid, false otherwise with detailed console errors
+ * 
+ * @example
+ * const config = {
+ *   immediateFeedback: true,
+ *   timerEnabled: false,
+ *   difficulty: 'medium',
+ *   subject: 'Mathematics'
+ * };
+ * 
+ * if (validateConfig(config)) {
+ *   console.log('Configuration is valid');
+ * }
  */
 export function validateConfig(config) {
   if (!isObject(config)) {

@@ -1,12 +1,43 @@
 /**
- * Question Validator Utility
- * Provides comprehensive validation and sanitization for quiz questions
+ * @fileoverview Question validator utility for comprehensive validation and sanitization.
+ * 
+ * This module provides robust validation and sanitization utilities for
+ * quiz questions. It ensures data integrity by checking question structures,
+ * validating required fields, and applying fixes where possible.
+ * 
+ * The validator handles different question types differently:
+ * - MCQ and True/False: Algorithm-evaluated with strict validation
+ * - Fill in Blank: AI-evaluated with flexible validation
+ * - Short Answer/Subjective: AI-evaluated with minimal requirements
+ * 
+ * Key features include:
+ * - Comprehensive structure validation
+ * - Type-specific validation rules
+ * - Intelligent sanitization with recovery attempts
+ * - Detailed error and warning reporting
+ * - Support for various data formats and edge cases
+ * 
+ * @module questionValidator
  */
 
 /**
- * Validates the structure of a question object
+ * Validates the structure of a question object.
+ * 
+ * Performs comprehensive validation of question objects including:
+ * - Basic type and presence checks
+ * - Question type validation
+ * - Type-specific validation rules
+ * - Field validation for optional properties
+ * - Detailed error and warning reporting
+ * 
  * @param {Object} question - The question object to validate
- * @returns {Object} { valid: boolean, errors: string[], warnings: string[] }
+ * @returns {Object} Validation result
+ * @property {boolean} valid - Whether the question structure is valid
+ * @property {string[]} errors - List of validation errors
+ * @property {string[]} warnings - List of validation warnings
+ * 
+ * @example
+ * const question = {\n *   type: 'MCQ',\n *   question: 'What is 2+2?',\n *   options: [\n *     { text: '3', isCorrect: false },\n *     { text: '4', isCorrect: true }\n *   ]\n * };\n * \n * const validation = validateQuestionStructure(question);\n * if (validation.valid) {\n *   console.log('Question is valid');\n * } else {\n *   console.error('Validation errors:', validation.errors);\n * }
  */
 export const validateQuestionStructure = (question) => {
   const errors = [];
@@ -142,10 +173,23 @@ export const validateQuestionStructure = (question) => {
 };
 
 /**
- * Sanitizes a question object, applying fixes where possible
+ * Sanitizes a question object, applying fixes where possible.
+ * 
+ * Attempts to recover malformed question data by:
+ * - Generating missing IDs
+ * - Normalizing text fields
+ * - Creating default options when needed
+ * - Setting sensible defaults for missing values
+ * - Converting various data types to expected formats
+ * 
+ * Returns null for questions that cannot be reasonably recovered.
+ * 
  * @param {Object} question - The question to sanitize
  * @param {number} index - Question index for ID generation
  * @returns {Object|null} Sanitized question or null if unfixable
+ * 
+ * @example
+ * const malformedQuestion = {\n *   type: 'MCQ',\n *   question: '  What is 2+2?  ',\n *   options: [\n *     { text: '3' }, // Missing isCorrect\n *     { text: '4' }  // Missing isCorrect\n *   ]\n * };\n * \n * const sanitized = sanitizeQuestion(malformedQuestion, 0);\n * if (sanitized) {\n *   console.log('Recovered question:', sanitized);\n * } else {\n *   console.error('Could not recover question');\n * }
  */
 export const sanitizeQuestion = (question, index = 0) => {
   if (!question || typeof question !== 'object') {
@@ -214,7 +258,22 @@ export const sanitizeQuestion = (question, index = 0) => {
 };
 
 /**
- * Normalizes various types to string
+ * Normalizes various types to string.
+ * 
+ * Converts different value types to clean strings, handling:
+ * - String trimming
+ * - Nested object properties (text/value)
+ * - Null/undefined values
+ * - Complex objects with JSON serialization
+ * 
+ * @param {*} value - Value to normalize to string
+ * @returns {string} Normalized string value
+ * 
+ * @example
+ * const str1 = normalizeToString('  hello  '); // 'hello'
+ * const str2 = normalizeToString({ text: 'world' }); // 'world'
+ * const str3 = normalizeToString(null); // ''
+ * const str4 = normalizeToString(42); // '42'
  */
 function normalizeToString(value) {
   if (typeof value === 'string') {
@@ -232,7 +291,23 @@ function normalizeToString(value) {
 }
 
 /**
- * Sanitizes options array for MCQ/True-False questions
+ * Sanitizes options array for MCQ/True-False questions.
+ * 
+ * Processes and validates question options ensuring:
+ * - Proper array structure
+ * - Minimum required options
+ * - Valid text and correctness flags
+ * - At least one correct answer
+ * - Type-specific constraints (e.g., exactly 2 for True/False)
+ * 
+ * Creates default options when recovery is needed.
+ * 
+ * @param {Array} options - Raw options array to sanitize
+ * @param {string} questionType - Question type for validation rules
+ * @returns {Array} Sanitized options array
+ * 
+ * @example
+ * const rawOptions = [\n *   { text: 'Option A' }, // Missing isCorrect\n *   { text: 'Option B' }  // Missing isCorrect\n * ];\n * \n * const sanitized = sanitizeOptions(rawOptions, 'MCQ');\n * // Result: First option marked correct, others false
  */
 function sanitizeOptions(options, questionType) {
   if (!Array.isArray(options)) {
@@ -288,7 +363,21 @@ function sanitizeOptions(options, questionType) {
 }
 
 /**
- * Creates default options based on question type
+ * Creates default options based on question type.
+ * 
+ * Generates sensible default options when original data
+ * cannot be recovered. Provides appropriate defaults for
+ * both MCQ and True/False question types.
+ * 
+ * @param {string} questionType - Question type ('MCQ' or 'True/False')
+ * @returns {Array} Default options array
+ * 
+ * @example
+ * const tfDefaults = createDefaultOptions('True/False');
+ * // [{ text: 'True', isCorrect: true }, { text: 'False', isCorrect: false }]
+ * 
+ * const mcqDefaults = createDefaultOptions('MCQ');
+ * // Four options with first marked correct
  */
 function createDefaultOptions(questionType) {
   if (questionType === 'True/False') {
@@ -307,7 +396,27 @@ function createDefaultOptions(questionType) {
 }
 
 /**
- * Validates an entire quiz structure
+ * Validates an entire quiz structure.
+ * 
+ * Performs validation of complete quiz objects including:
+ * - Quiz-level structure checks
+ * - Question array validation
+ * - Individual question validation
+ * - Statistical reporting
+ * 
+ * Provides comprehensive feedback on quiz validity with
+ * counts of valid questions and detailed error reporting.
+ * 
+ * @param {Object} quiz - Quiz object to validate
+ * @returns {Object} Quiz validation result
+ * @property {boolean} valid - Whether the quiz structure is valid
+ * @property {string[]} errors - List of quiz-level validation errors
+ * @property {string[]} warnings - List of quiz-level validation warnings
+ * @property {number} totalQuestions - Total number of questions
+ * @property {number} validQuestions - Number of valid questions
+ * 
+ * @example
+ * const quiz = {\n *   questions: [\n *     {\n *       type: 'MCQ',\n *       question: 'What is 2+2?',\n *       options: [\n *         { text: '3', isCorrect: false },\n *         { text: '4', isCorrect: true }\n *       ]\n *     }\n *   ]\n * };\n * \n * const validation = validateQuizStructure(quiz);\n * if (validation.valid) {\n *   console.log(`Quiz has ${validation.validQuestions} valid questions`);\n * } else {\n *   console.error('Quiz validation failed:', validation.errors);\n * }
  */
 export const validateQuizStructure = (quiz) => {
   const errors = [];

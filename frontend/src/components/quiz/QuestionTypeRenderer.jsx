@@ -1,14 +1,67 @@
+/**
+ * @fileoverview Question type renderer for displaying different question formats.
+ * 
+ * This component renders different types of quiz questions including MCQ,
+ * True/False, Short Answer, and Fill in the Blank. It manages the state
+ * for text answers and fill-in-the-blank inputs, and provides appropriate
+ * UI elements for each question type.
+ * 
+ * @module QuestionTypeRenderer
+ */
+
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import AnswerOption from './AnswerOption';
 
+/**
+ * Question type renderer for displaying different question formats.
+ * 
+ * @param {Object} props - Component properties
+ * @param {Object} props.question - The question object with type, text, and options
+ * @param {Object|null} props.selectedAnswer - The currently selected answer
+ * @param {Function} props.onAnswerSelect - Callback function when an answer is selected
+ * @param {boolean} props.disabled - Whether the question is disabled
+ * @param {boolean} props.showResult - Whether to show results/feedback
+ * @param {boolean} [props.immediateFeedback=true] - Whether to enable immediate feedback
+ * @param {Object} ref - Forwarded reference for accessing component methods
+ * 
+ * @returns {JSX.Element} The rendered question based on its type
+ * 
+ * @example
+ * <QuestionTypeRenderer
+ *   question={{
+ *     type: 'MCQ',
+ *     question: 'What is the capital of France?',
+ *     options: [
+ *       { text: 'London', isCorrect: false },
+ *       { text: 'Paris', isCorrect: true }
+ *     ]
+ *   }}
+ *   selectedAnswer={null}
+ *   onAnswerSelect={(index, correct) => console.log('Answered:', index, correct)}
+ *   disabled={false}
+ *   showResult={false}
+ * />
+ */
 const QuestionTypeRenderer = forwardRef(
   (
     { question, selectedAnswer, onAnswerSelect, disabled, showResult, immediateFeedback = true },
     ref
   ) => {
+    /**
+     * Text answer state for short answer questions
+     * @type {string}
+     */
     const [textAnswer, setTextAnswer] = useState('');
+    
+    /**
+     * Fill-in-the-blank answers state
+     * @type {Array<string>}
+     */
     const [fillBlanks, setFillBlanks] = useState(['', '']);
 
+    /**
+     * Reset state and initialize based on question type
+     */
     useEffect(() => {
       // Always reset state first to prevent using old answers for different question types
       setTextAnswer('');
@@ -32,7 +85,14 @@ const QuestionTypeRenderer = forwardRef(
       }
     }, [question, selectedAnswer]);
 
+    /**
+     * Expose getAnswer method to parent components via ref
+     */
     useImperativeHandle(ref, () => ({
+      /**
+       * Get the current answer from the component
+       * @returns {string|Array|null} The answer or null if not provided
+       */
       getAnswer: () => {
         if (question.type === 'Short Answer') {
           return textAnswer.trim() ? textAnswer.trim() : null;
@@ -44,22 +104,37 @@ const QuestionTypeRenderer = forwardRef(
       },
     }));
 
+    /**
+     * Handle text input changes for short answer questions
+     * @param {string} value - New text value
+     */
     const handleTextChange = (value) => {
       setTextAnswer(value);
     };
 
+    /**
+     * Handle changes for fill-in-the-blank inputs
+     * @param {number} index - Index of the blank being changed
+     * @param {string} value - New value for the blank
+     */
     const handleBlankChange = (index, value) => {
       const newBlanks = [...fillBlanks];
       newBlanks[index] = value;
       setFillBlanks(newBlanks);
     };
 
+    /**
+     * Submit handler for short answer questions
+     */
     const handleTextSubmit = () => {
       if (textAnswer.trim()) {
         onAnswerSelect(0, false, false, textAnswer.trim());
       }
     };
 
+    /**
+     * Submit handler for fill-in-the-blank questions
+     */
     const handleFillBlankSubmit = () => {
       const allFilled = fillBlanks.every((blank) => blank.trim() !== '');
       if (allFilled) {

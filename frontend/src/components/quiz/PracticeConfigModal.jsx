@@ -1,17 +1,59 @@
+/**
+ * @fileoverview Practice configuration modal for quiz settings.
+ * 
+ * This modal allows users to configure practice session settings including
+ * timer options and immediate feedback preferences. It provides a clean, 
+ * accessible interface for users to customize their quiz experience before
+ * starting.
+ * 
+ * @module PracticeConfigModal
+ */
+
 import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 
+/**
+ * Practice configuration modal for quiz settings.
+ * 
+ * @param {Object} props - Component properties
+ * @param {boolean} props.isOpen - Whether the modal is currently visible
+ * @param {Function} props.onClose - Callback function when modal is closed
+ * @param {Function} props.onStart - Callback function when quiz is started with configuration
+ * @param {number} props.questionCount - Number of questions in the practice session
+ * 
+ * @returns {JSX.Element} The rendered configuration modal
+ * 
+ * @example
+ * <PracticeConfigModal
+ *   isOpen={showConfig}
+ *   onClose={() => setShowConfig(false)}
+ *   onStart={(config) => startQuiz(config)}
+ *   questionCount={10}
+ * />
+ */
 const PracticeConfigModal = ({ isOpen, onClose, onStart, questionCount }) => {
+  /**
+   * Current configuration state
+   * @type {Object}
+   */
   const [config, setConfig] = useState({
     immediateFeedback: true,
     totalTimer: 0, // Default to no timer
   });
 
+  /**
+   * Handle input changes for configuration settings
+   * @param {string} field - The field name to update
+   * @param {*} value - The new value for the field
+   */
   const handleInputChange = (field, value) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
   };
 
+  /**
+   * Handle start button click to begin quiz with current configuration
+   */
   const handleStart = () => {
     onStart({
       ...config,
@@ -19,6 +61,11 @@ const PracticeConfigModal = ({ isOpen, onClose, onStart, questionCount }) => {
     });
   };
 
+  /**
+   * Format seconds into a human-readable time string
+   * @param {number} seconds - Time in seconds to format
+   * @returns {string} Formatted time string (e.g., "5 minutes", "No timer")
+   */
   const formatTime = (seconds) => {
     if (seconds === 0) return 'No timer';
     if (seconds < 60) return `${seconds} seconds`;

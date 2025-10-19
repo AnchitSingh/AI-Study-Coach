@@ -1,3 +1,17 @@
+/**
+ * @fileoverview Main application component.
+ * 
+ * This component serves as the central router and state manager for the AI Study Coach application.
+ * It handles navigation between different pages (landing, home, quiz, story, etc.) and manages
+ * global application state like user preferences and visited status.
+ * 
+ * The App component maintains the current page state and navigation data, providing a
+ * seamless user experience as they move through the learning flow. It also handles
+ * initialization logic for new vs returning users.
+ * 
+ * @module App
+ */
+
 import React, { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { ProfileProvider } from './contexts/ProfileContext';
@@ -13,16 +27,46 @@ import GlobalStatsPage from './pages/GlobalStatsPage';
 import QuizErrorBoundary from './pages/QuizErrorBoundary';
 import './index.css';
 
+/**
+ * Main application component that handles routing and global state.
+ * 
+ * @returns {JSX.Element} The rendered application with appropriate page based on current state
+ * 
+ * @example
+ * <App />
+ */
 const App = () => {
+  /**
+   * Current page state - determines which component to render
+   * @type {string}
+   */
   const [currentPage, setCurrentPage] = useState(() => {
     const hasVisited = localStorage.getItem('aistudycoach_visited');
     return hasVisited ? 'home' : 'landing';
   });
 
-  const [navigationData, setNavigationData] = useState(null); // Store navigation data
-  const [storyContent, setStoryContent] = useState(null); // Store streaming story content
+  /**
+   * Data passed between pages during navigation
+   * @type {Object|null}
+   */
+  const [navigationData, setNavigationData] = useState(null);
+
+  /**
+   * Streaming story content that can be updated without page changes
+   * @type {Object|null}
+   */
+  const [storyContent, setStoryContent] = useState(null);
+
+  /**
+   * Flag to track if initialization logic has run
+   * @type {boolean}
+   */
   const [hasInitialized, setHasInitialized] = useState(false);
 
+  /**
+   * Initialize application state on mount
+   * Checks localStorage to determine if user has visited before
+   */
   React.useEffect(() => {
     if (hasInitialized) return;
 
@@ -39,6 +83,21 @@ const App = () => {
 
 
 
+  /**
+   * Navigates to a different page in the application.
+   * 
+   * Handles navigation between different application views and manages data transfer
+   * between pages. Special handling for story streaming updates where content
+   * can be updated without changing pages.
+   * 
+   * @param {string} page - The target page identifier (e.g., 'home', 'quiz', 'story')
+   * @param {Object} [data=null] - Optional data to pass to the target page
+   * @returns {void}
+   * 
+   * @example
+   * navigateTo('quiz', { quizConfig: { questionCount: 10 } });
+   * navigateTo('home');
+   */
   const navigateTo = (page, data = null) => {
     if (currentPage === 'landing' && page === 'home') {
       localStorage.setItem('aistudycoach_visited', 'true');
@@ -59,6 +118,14 @@ const App = () => {
 
 
 
+  /**
+   * Resets the application to its initial state.
+   * 
+   * Clears localStorage flags, resets initialization status, and returns to
+   * the landing page. Used for returning users who want to start fresh.
+   * 
+   * @returns {void}
+   */
   const resetApp = () => {
     localStorage.removeItem('aistudycoach_visited');
     setHasInitialized(false);

@@ -1,10 +1,42 @@
 /**
- * JSON Guard Utility
- * Provides robust JSON parsing with repair capabilities
+ * @fileoverview JSON guard utility with robust parsing and repair capabilities.
+ * 
+ * This module provides comprehensive JSON parsing utilities designed to handle
+ * imperfect JSON data from AI models and other unreliable sources. It includes
+ * multiple parsing strategies, automatic repair mechanisms, and validation
+ * capabilities to ensure reliable JSON processing.
+ * 
+ * The utility is particularly valuable for processing AI-generated JSON which
+ * often contains formatting issues, markdown artifacts, or structural problems
+ * that would cause standard JSON.parse() to fail.
+ * 
+ * Key features include:
+ * - Multiple parsing attempts with different cleaning strategies
+ * - Markdown code block extraction
+ * - Quote normalization
+ * - Common syntax error correction
+ * - Optional AI-assisted repair for complex issues
+ * - Schema validation support
+ * 
+ * @module jsonGuard
  */
 
 /**
- * Safely attempts to parse JSON
+ * Safely attempts to parse JSON.
+ * 
+ * @param {string} jsonText - JSON text to parse
+ * @returns {Object} Parse result with ok flag, value/error
+ * @property {boolean} ok - Whether parsing was successful
+ * @property {*} [value] - Parsed value if successful
+ * @property {Error} [error] - Error object if parsing failed
+ * 
+ * @example
+ * const result = tryParse('{"valid": "json"}');
+ * if (result.ok) {
+ *   console.log('Parsed:', result.value);
+ * } else {
+ *   console.error('Parse failed:', result.error.message);
+ * }
  */
 function tryParse(jsonText) {
   if (typeof jsonText !== 'string') {
@@ -20,7 +52,18 @@ function tryParse(jsonText) {
 }
 
 /**
- * Extracts JSON block from text that might contain markdown or extra content
+ * Extracts JSON block from text that might contain markdown or extra content.
+ * 
+ * Attempts to extract clean JSON from text that may be wrapped in markdown
+ * code blocks or mixed with other content. Looks for JSON objects or arrays
+ * and extracts complete, properly balanced structures.
+ * 
+ * @param {string} text - Text that may contain JSON
+ * @returns {string} Extracted JSON block or cleaned text
+ * 
+ * @example
+ * const markdown = '```json\\n{"name": "John"}\\n```';
+ * const jsonBlock = extractJsonBlock(markdown); // '{"name": "John"}'
  */
 function extractJsonBlock(text) {
   if (!text || typeof text !== 'string') {
@@ -104,7 +147,18 @@ function extractJsonBlock(text) {
 }
 
 /**
- * Normalizes various quote types to standard JSON quotes
+ * Normalizes various quote types to standard JSON quotes.
+ * 
+ * Converts smart quotes and other typographic quotation marks to standard
+ * ASCII quotes that are valid in JSON. This is particularly important
+ * for processing text from word processors or web content.
+ * 
+ * @param {string} jsonish - Text with potentially non-standard quotes
+ * @returns {string} Text with normalized quotes
+ * 
+ * @example
+ * const text = '“smart quotes”'; // Contains unicode smart quotes
+ * const normalized = normalizeQuotes(text); // '"smart quotes"'
  */
 function normalizeQuotes(jsonish) {
   if (typeof jsonish !== 'string') {
@@ -113,11 +167,23 @@ function normalizeQuotes(jsonish) {
 
   return jsonish
     .replace(/[""]/g, '"') // Smart quotes to regular quotes
-    .replace(/['']/g, "'"); // Smart single quotes to regular
+    .replace(/[']/g, "'"); // Smart single quotes to regular
 }
 
 /**
- * Additional cleanup for common JSON issues
+ * Additional cleanup for common JSON issues.
+ * 
+ * Applies various corrections to address frequent JSON formatting problems:
+ * - Removes Byte Order Marks (BOM)
+ * - Fixes trailing commas before closing braces/brackets
+ * - Corrects unnecessary escaping of single quotes
+ * 
+ * @param {string} jsonText - JSON text to clean
+ * @returns {string} Cleaned JSON text
+ * 
+ * @example
+ * const messy = '{ "name": "John", }'; // Trailing comma
+ * const clean = cleanupJson(messy); // '{ "name": "John" }'
  */
 function cleanupJson(jsonText) {
   if (typeof jsonText !== 'string') {
@@ -132,7 +198,7 @@ function cleanupJson(jsonText) {
   }
 
   // Remove trailing commas before closing braces/brackets
-  cleaned = cleaned.replace(/,(\s*[}```])/g, '$1');
+  cleaned = cleaned.replace(/,(\s*[}\]])/g, '$1');
 
   // Fix common escaping issues
   cleaned = cleaned.replace(/\\'/g, "'"); // Don't need to escape single quotes in JSON
@@ -141,13 +207,33 @@ function cleanupJson(jsonText) {
 }
 
 /**
- * Main parsing function with repair capabilities
- * @param {Object} options - Configuration object
- * @param {string} options.raw - Raw text to parse
- * @param {Object} options.schema - Expected schema (optional)
- * @param {Function} options.validate - Validation function
- * @param {Function} options.repairFn - AI repair function (optional)
+ * Main parsing function with repair capabilities.
+ * 
+ * Attempts to parse and validate JSON through multiple strategies:
+ * 1. Direct parsing of raw input
+ * 2. Extraction and cleaning of JSON blocks from markdown
+ * 3. Quote normalization and additional cleanup
+ * 4. Optional AI-assisted repair for complex issues
+ * 
+ * @param {Object} options - Configuration options
+ * @param {string|Object} options.raw - Raw text or object to parse
+ * @param {Object} [options.schema] - Expected schema for validation
+ * @param {Function} [options.validate] - Validation function
+ * @param {Function} [options.repairFn] - AI repair function (optional)
  * @returns {Promise<Object>} Parsed and validated object
+ * 
+ * @throws {Error} If all parsing attempts fail
+ * 
+ * @example
+ * try {
+ *   const result = await parseWithRepair({
+ *     raw: '```json\\n{"valid": true}\\n```',
+ *     validate: (obj) => obj.valid === true
+ *   });
+ *   console.log('Parsed result:', result);
+ * } catch (error) {
+ *   console.error('Parsing failed:', error.message);
+ * }
  */
 export async function parseWithRepair({ raw, schema, validate, repairFn }) {
   if (!raw) {
@@ -254,7 +340,18 @@ export async function parseWithRepair({ raw, schema, validate, repairFn }) {
 }
 
 /**
- * Quick helper to safely parse JSON with fallback
+ * Quick helper to safely parse JSON with fallback.
+ * 
+ * Provides a simple interface for JSON parsing that returns a fallback
+ * value instead of throwing an error when parsing fails.
+ * 
+ * @param {string} text - JSON text to parse
+ * @param {*} [fallback=null] - Value to return if parsing fails
+ * @returns {*} Parsed JSON value or fallback value
+ * 
+ * @example
+ * const result = safeJsonParse('{"valid": true}', {}); // {valid: true}
+ * const fallback = safeJsonParse('invalid', {}); // {}
  */
 export function safeJsonParse(text, fallback = null) {
   const result = tryParse(text);
