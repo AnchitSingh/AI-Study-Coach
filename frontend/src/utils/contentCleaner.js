@@ -251,10 +251,10 @@ function cleanCodeBlocks(text) {
  */
 function cleanInlineMath(text) {
   return text
-    .replace(/\$\$[\s\S]*?\$\$/g, ' [equation] ')     // Display math $$...$$
-    .replace(/\$[^$\n]{1,200}\$/g, ' [equation] ')    // Inline math $...$
-    .replace(/\\$$[\s\S]*?\\$$/g, ' [equation] ')     // LaTeX inline $$...$$
-    .replace(/\\$$[\s\S]*?\\$$/g, ' [equation] ');    // LaTeX display $$...$$
+    .replace(/\$\$[\s\S]*?\$\$/g, ' [equation] ')
+    .replace(/\$[^$\n]{1,200}\$/g, ' [equation] ')
+    .replace(/\\\([\s\S]*?\\\)/g, ' [equation] ')
+    .replace(/\\\[[\s\S]*?\\\]/g, ' [equation] ');
 }
 
 /**
@@ -273,20 +273,20 @@ function cleanScientificText(text) {
   text = text.replace(/\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/g, ' [equation] ');
   
   // Remove LaTeX commands with optional arguments
-  text = text.replace(/\$$a-zA-Z]+($$[^$$]*$$)?(\{[^}]*\})?/g, ' ');
+  text = text.replace(/\\[a-zA-Z]+(\[[^\]]*\])?(\{[^}]*\})?/g, ' ');
   
   // Iteratively remove nested braces with LaTeX commands (max 5 iterations)
   let prevText;
   let iterations = 0;
   do {
     prevText = text;
-    text = text.replace(/\{[^{}]*\$$a-zA-Z]+[^{}]*\}/g, ' [math] ');
+    text = text.replace(/\{[^{}]*\\[a-zA-Z]+[^{}]*\}/g, ' [math] ');
     text = text.replace(/\{[^{}]*\}/g, ' ');
     iterations++;
   } while (prevText !== text && iterations < 5);
   
   // Clean up remaining LaTeX artifacts
-  text = text.replace(/\$$a-zA-Z]+/g, '');
+  text = text.replace(/\\[a-zA-Z]+/g, '');
   text = text.replace(/\\/g, '');
   
   // Filter out lines that are mostly mathematical notation
@@ -295,7 +295,7 @@ function cleanScientificText(text) {
     const trimmed = line.trim();
     if (trimmed.length < 3) return false;
     
-    const textOnly = trimmed.replace(/$$(equation|math|code|link|email)$$/gi, '');
+    const textOnly = trimmed.replace(/\[(equation|math|code|link|email)\]/gi, '');
     const words = (textOnly.match(/\b[a-zA-Z]{2,}\b/g) || []);
     
     // Remove lines with no real words but have content
@@ -309,7 +309,7 @@ function cleanScientificText(text) {
     if (ratio < 0.25 && textOnly.length > 15) return false;
     
     // Remove lines with too many equations
-    if (trimmed.match(/$$equation$$/g)?.length > 4) return false;
+    if (trimmed.match(/\[equation\]/g)?.length > 4) return false;
     
     return true;
   });
@@ -436,7 +436,7 @@ function cleanEquationFragments(text) {
   text = text.replace(/\s+where\s+[a-z_]+\s+is\s+the\s+[^.]+?\./gi, '.');
   
   // SMART DETECTION: Analyze remaining equations with equals signs
-  const equationPattern = /\b[a-zA-Z][a-zA-Z0-9_/\s()$$$$]*\s*=\s*[^.;!?\n]{1,150}/g;
+  const equationPattern = /\b[a-zA-Z][a-zA-Z0-9_/\s()\[\]]*\s*=\s*[^.;!?\n]{1,150}/g;
   
   text = text.replace(equationPattern, (match) => {
     const trimmed = match.trim();
@@ -460,10 +460,10 @@ function cleanEquationFragments(text) {
   
   // Final cleanup pass
   text = text
-    .replace(/\s{2,}/g, ' ')                                    // Collapse multiple spaces
-    .replace(/$$equation$$\s*[.,]?\s*$$equation$$/g, '[equation]')  // Merge adjacent equation placeholders
-    .replace(/\s+$$equation$$\s+/g, ' [equation] ')             // Normalize spacing around placeholders
-    .replace(/\.\s*$$equation$$\s*\./g, '.');                   // Remove equations between periods
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\[equation\]\s*[.,]?\s*\[equation\]/g, '[equation]')
+    .replace(/\s+\[equation\]\s+/g, ' [equation] ')
+    .replace(/\.\s*\[equation\]\s*\./g, '.');
   
   return text;
 }
